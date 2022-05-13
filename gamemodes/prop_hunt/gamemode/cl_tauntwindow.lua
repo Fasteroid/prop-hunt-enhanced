@@ -22,7 +22,6 @@ end)
 
 local function MainFrame()
 	if GetConVar("ph_enable_custom_taunts"):GetInt() < 1 then
-		chat.AddText(Color(220,0,0),"[PH:E - Taunts] Warning: This server has custom taunts disabled.")
 		return
 	end
 
@@ -198,13 +197,9 @@ local function MainFrame()
 	end
 
 	local function SendToServer(snd)
-		if !isplayed then
-			net.Start("CL2SV_PlayThisTaunt"); net.WriteString(tostring(snd)); net.SendToServer();
-			isplayed = true
-			timer.Simple(GetConVar("ph_customtaunts_delay"):GetInt(), function() isplayed = false; end)
-		else
-			chat.AddText(Color(220,40,0),"[PH:E - Taunts] Warning: ",Color(220,220,220),"Please wait in " .. GetConVar("ph_customtaunts_delay"):GetInt() .. " seconds...!")
-		end
+		net.Start("CL2SV_PlayThisTaunt")
+			net.WriteString(tostring(snd))
+		net.SendToServer();
 	end
 
 	CreateStyledButton(LEFT,86,"Play Taunt Locally",{5,5,5,5},"vgui/phehud/btn_play.vmt",FILL, function()

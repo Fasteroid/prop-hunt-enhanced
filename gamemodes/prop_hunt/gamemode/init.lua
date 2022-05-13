@@ -466,10 +466,6 @@ end
 
 -- Called when player presses any button
 function GM:PlayerButtonDown (pl, button)
-	-- Stop if player isn't alive or button is not the one the player binded
-	if !pl:Alive () || button != pl:GetInfoNum ("ph_cl_taunt_key", KEY_F4) then return end
-
-	DoPlayerTaunt (pl)
 end
 
 -- Called when a player leaves

@@ -14,9 +14,9 @@ net.Receive("CL2SV_PlayThisTaunt", function(len, ply)
 			ply:EmitSound(snd, 100)
 			ply:SetNWFloat("LastTauntTime", CurTime())
 		else
-			ply:ChatPrint("[PH: Enhanced] - Warning: That taunt you selected does not exists on server!")
+			ply:ChatPrint("[PH: Enhanced] - Failed to play taunt! (doesn't exist???)")
 		end
 	else
-		ply:ChatPrint("[PH: Enhanced] - Please wait in few seconds...!")
+		ply:ChatPrint("[PH: Enhanced] - Taunting is on cooldown.  Wait a second.")
 	end
 end)
