@@ -4,6 +4,7 @@ resource.AddWorkshop("1754658833")
 -- Send required file to clients
 AddCSLuaFile("sh_init.lua")
 AddCSLuaFile("sh_player.lua")
+AddCSLuaFile("cl_tauntloader.lua")
 AddCSLuaFile("cl_tauntwindow.lua")
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("cl_hud_mask.lua")
@@ -17,6 +18,7 @@ AddCSLuaFile("cl_credits.lua")
 include("sv_networkfunctions.lua")
 include("sh_init.lua")
 include("sh_config.lua")
+include("sv_tauntloader.lua")
 include("sv_admin.lua")
 include("sv_autotaunt.lua")
 include("sv_tauntwindow.lua")
@@ -448,13 +450,13 @@ function DoPlayerTaunt(pl)
 		}
 
 		-- play the taunts based on listed curCustTaunt available.
-		repeat
-			if pl:Team() == TEAM_HUNTERS then
-				rand_taunt = table.Random(curTeamTaunt.hunter)
-			else
-				rand_taunt = table.Random(curTeamTaunt.prop)
-			end
-		until rand_taunt != pl.last_taunt
+
+		if pl:Team() == TEAM_HUNTERS then
+			rand_taunt = table.Random(curTeamTaunt.hunter)
+		else
+			rand_taunt = table.Random(curTeamTaunt.prop)
+		end
+
 
 		pl.last_taunt_time = CurTime() + GetConVar("ph_normal_taunt_delay"):GetInt()
 		pl.last_taunt = rand_taunt

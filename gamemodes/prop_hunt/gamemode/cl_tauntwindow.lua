@@ -65,29 +65,13 @@ local function MainFrame()
 	list:SetSize(0,450)
 	list:Dock(BOTTOM)
 
-	local TEAM_TAUNTS = {}
-	local WHOLE_TEAM_TAUNTS = {}
-
-	-- Determine if prop or hunter taunt list to be used	
-	if (LocalPlayer():Team() == TEAM_HUNTERS) then
-		TEAM_TAUNTS = PHE:GetTeamTaunt(TEAM_HUNTERS,false)
-		WHOLE_TEAM_TAUNTS = PHE:GetAllTeamTaunt(TEAM_HUNTERS)
-	else
-		TEAM_TAUNTS = PHE:GetTeamTaunt(TEAM_PROPS,false)
-		WHOLE_TEAM_TAUNTS = PHE:GetAllTeamTaunt(TEAM_PROPS)
-	end
-
-	for name,_ in pairs(TEAM_TAUNTS) do
-		list:AddLine(name)
-	end
+	local TEAM_TAUNTS = PHE:GetTeamTaunt( LocalPlayer():Team() )
+	local WHOLE_TEAM_TAUNTS = PHE:GetAllTeamTaunt( LocalPlayer():Team() )
 
 	local comb = vgui.Create("DComboBox", frame)
 
 	comb:Dock(TOP)
 	comb:SetSize(0, 20)
-	comb:SetValue("Original Taunts")
-	comb:AddChoice("Original Taunts")
-	comb:AddChoice("PH:E/Custom Taunts")
 
 	function comb:SortAndStyle(pnl)
 		pnl:SortByColumn(1,false)
@@ -126,40 +110,28 @@ local function MainFrame()
 	end
 
 	comb.OnSelect = function(pnl, idx, val)
-		if val == "Original Taunts" then
-			list:Clear()
-			hastaunt = false
-			if TEAM_TAUNTS then
-				for name,val in pairs(TEAM_TAUNTS) do
-					list:AddLine(name)
-				end
+		print(pnl)
+		list:Clear()
+		hastaunt = false
+		if TEAM_TAUNTS then
+			for name, _ in pairs(TEAM_TAUNTS[val]) do
+				list:AddLine(name)
 			end
-			pnl:SortAndStyle(list)
-		elseif val == "PH:E/Custom Taunts" then
-			list:Clear()
-			hastaunt = false
-			if LocalPlayer():Team() == TEAM_PROPS then
-				if PHE:GetTeamTaunt(TEAM_PROPS,true) != false then
-					for name,val in pairs(PHE:GetTeamTaunt(TEAM_PROPS,true)) do
-						list:AddLine(name)
-					end
-				else
-					list:AddLine("<< WARNING: NO TAUNTS DETECTED! >>")
-				end
-			else
-				if PHE:GetTeamTaunt(TEAM_HUNTERS,true) != false then
-					for name,val in pairs(PHE:GetTeamTaunt(TEAM_HUNTERS,true)) do
-						list:AddLine(name)
-					end
-				else
-					list:AddLine("<< WARNING: NO TAUNTS DETECTED! >>")
-				end
-			end
-			pnl:SortAndStyle(list)
+		end
+		pnl:SortAndStyle(list)
+	end
+
+	local first = true
+	for group, tbl in pairs(TEAM_TAUNTS) do
+		comb:AddChoice(group)
+		if first then
+			comb:SetValue(group)
+			comb.OnSelect(comb,0,group)
+			first = false
 		end
 	end
 
-	comb:SortAndStyle(list)
+	
 
 	-- I know, this one is fixed style.
 	local btnpanel = vgui.Create("DPanel", frame)
@@ -193,6 +165,7 @@ local function MainFrame()
 	end
 
 	local function TranslateTaunt(linename)
+		PrintTable(WHOLE_TEAM_TAUNTS)
 		return WHOLE_TEAM_TAUNTS[linename]
 	end
 
@@ -204,6 +177,7 @@ local function MainFrame()
 
 	CreateStyledButton(LEFT,86,"Play Taunt Locally",{5,5,5,5},"vgui/phehud/btn_play.vmt",FILL, function()
 		if hastaunt then
+			print(list:GetLine(list:GetSelectedLine()):GetValue(1))
 			local getline = TranslateTaunt(list:GetLine(list:GetSelectedLine()):GetValue(1))
 			surface.PlaySound(getline)
 		end
