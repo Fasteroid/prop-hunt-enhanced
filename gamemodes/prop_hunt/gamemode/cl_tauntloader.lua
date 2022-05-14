@@ -8,7 +8,6 @@ hook.Add( "InitPostEntity", "PHRequestTaunts", function() -- this was breaking f
     requestTaunts()
 end )
 
-requestTaunts()
 PHE.TAUNTS = {}
 
 net.Receive("PH_TauntRequest",function()
