@@ -17,7 +17,6 @@ local function AddDemTaunt()
         local tauntNames = file.Find("sound/"..tauntPath.."*", "GAME");
         for _, taunt in pairs( tauntNames ) do
             tauntDir[taunt] = tauntPath..taunt
-			resource.AddSingleFile("sound/"..tauntDir[taunt])
         end
     end
 
@@ -29,7 +28,6 @@ local function AddDemTaunt()
         local tauntNames = file.Find("sound/"..tauntPath.."*", "GAME");
         for _, taunt in pairs( tauntNames ) do
             tauntDir[taunt] = tauntPath..taunt
-			resource.AddSingleFile("sound/"..tauntDir[taunt])
         end
     end
 
