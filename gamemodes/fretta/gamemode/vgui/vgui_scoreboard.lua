@@ -17,7 +17,7 @@ function PANEL:Init()
 	self.HostName:SetText( GetHostName() )
 	
 	self.GamemodeName = vgui.Create( "DLabel", self )
-	self.GamemodeName:SetText( "Prop Hunt: INFINITY" .. " | Version ".. GAMEMODE._VERSION .. ", Rev. ".. GAMEMODE.REVISION )
+	self.GamemodeName:SetText( "Prop Hunt: Infinity" )
 	
 	self:SetHeight( 64 )
 

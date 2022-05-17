@@ -23,8 +23,8 @@ hook.Add("PH_CustomTabMenu", "PHE.About", function(tab, pVgui)
 	grid:SetRowHeight(50)
 
 	local label = {
-		title 	= "Prop Hunt: Enhanced",
-		author	= "Enhanced by: Wolvindra-Vinzuerio, D4UNKN0WNM4N, Lucky & Fafy.",
+		title 	= "Prop Hunt: Infinity",
+		author	= "Enhanced by: Wolvindra-Vinzuerio, D4UNKN0WNM4N, Lucky & Fafy; expanded to Infinity by Fasteroid",
 		version = GAMEMODE._VERSION,
 		rev 	= GAMEMODE.REVISION,
 		credits	= "Yam, Lucky, Godfather, adk, Lucas2107, Jonpopnycorn, Thundernerd,  stephanlachnit",
@@ -37,7 +37,6 @@ hook.Add("PH_CustomTabMenu", "PHE.About", function(tab, pVgui)
 	}
 
 	pVgui("","label","PHE.TitleFont",grid, label.title )
-	pVgui("","label","Trebuchet24",grid, PHE.LANG.PHEMENU.ABOUT.CURRENTVER .. label.version .. " | " .. PHE.LANG.PHEMENU.ABOUT.CURRENTREV .. label.rev)
 	pVgui("","label","Trebuchet24",grid, PHE.LANG.PHEMENU.ABOUT.ENJOYING )
 	pVgui("","label",false,grid, PHE.LANG.PHEMENU.ABOUT.LINKS )
 	pVgui("","btn",{max = 3,textdata = {

@@ -48,17 +48,13 @@ else
 	include("mapvote/cl_mapvote.lua")
 end
 
--- Updates!
-AddCSLuaFile("sh_httpupdates.lua")
-include("sh_httpupdates.lua")
-
 -- Fretta!
 DeriveGamemode("fretta")
 IncludePlayerClasses()
 
 -- Information about the gamemode
-GM.Name		= "Prop Hunt: ENHANCED"
-GM.Author	= "Wolvindra-Vinzuerio, D4UNKN0WNM4N2010, Fafy, Dralga & Zero"
+GM.Name		= "Prop Hunt: INFINITY"
+GM.Author	= "Wolvindra-Vinzuerio, D4UNKN0WNM4N2010, Fafy, Dralga & Zero w/ tweaks by Fasteroid"
 
 GM._VERSION = "16"
 GM.REVISION	= "A"
