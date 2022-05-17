@@ -1,12 +1,14 @@
 local function requestTaunts()
     net.Start("PH_TauntRequest")
     net.SendToServer()
+	print("Requesting taunts...")
 end
 
 hook.Add( "InitPostEntity", "PHRequestTaunts", function() -- this was breaking for some reason when we did it on tick 1
-    print("Requesting taunts...")
     requestTaunts()
 end )
+
+requestTaunts()
 
 PHE.TAUNTS = {}
 
@@ -15,6 +17,7 @@ net.Receive("PH_TauntRequest",function()
     local data = util.JSONToTable( util.Decompress( net.ReadData(length) ) )
     PHE.TAUNTS.HUNTERS = data.h
     PHE.TAUNTS.PROPS = data.p
+	print("Taunts received.")
 end)
 
 -- this really should be in a shared file but I'm lazy

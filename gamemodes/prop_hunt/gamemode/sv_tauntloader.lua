@@ -37,6 +37,8 @@ local function AddDemTaunt()
 		p = PHE.TAUNTS.PROPS
 	}))
 
+    PrintTable(PHE.TAUNTS)
+
 end
 AddDemTaunt()
 hook.Add("Initialize", "PHE.AddTauntTables", AddDemTaunt)

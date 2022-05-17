@@ -12,6 +12,9 @@ local isopened = false
 local isforcedclose = false
 local hastaunt = false
 
+local lastcategory = nil
+local lastteam = nil
+
 net.Receive("PH_ForceCloseTauntWindow", function()
 	isforcedclose = true
 end)
@@ -26,6 +29,11 @@ local function MainFrame()
 	end
 
 	isopened = true
+
+	if( LocalPlayer():Team() ~= lastteam ) then 
+		lastcategory = nil 
+		lastteam = LocalPlayer():Team()
+	end
 
 	local frame = vgui.Create("DFrame")
 	frame:SetSize(400,600)
@@ -46,15 +54,6 @@ local function MainFrame()
 		isopened = false
 		hastaunt = false
 	end
-
-	local function frame_Think_Force()
-		if isforcedclose == true && isopened == true then
-			isopened = false
-			hastaunt = false
-			frame:Close()
-		end
-	end
-	hook.Add("Think", "CloseWindowFrame_Force", frame_Think_Force)
 
 	local list = vgui.Create("DListView", frame)
 
@@ -110,10 +109,10 @@ local function MainFrame()
 	end
 
 	comb.OnSelect = function(pnl, idx, val)
-		print(pnl)
 		list:Clear()
 		hastaunt = false
-		if TEAM_TAUNTS then
+		lastcategory = val
+		if TEAM_TAUNTS and TEAM_TAUNTS[val] then
 			for name, _ in pairs(TEAM_TAUNTS[val]) do
 				list:AddLine(name)
 			end
@@ -121,17 +120,13 @@ local function MainFrame()
 		pnl:SortAndStyle(list)
 	end
 
-	local first = true
 	for group, tbl in pairs(TEAM_TAUNTS) do
 		comb:AddChoice(group)
-		if first then
-			comb:SetValue(group)
-			comb.OnSelect(comb,0,group)
-			first = false
-		end
+		lastcategory = lastcategory or group
 	end
 
-	
+	comb:SetValue(lastcategory)
+	comb.OnSelect(comb,0,lastcategory)
 
 	-- I know, this one is fixed style.
 	local btnpanel = vgui.Create("DPanel", frame)
@@ -165,7 +160,6 @@ local function MainFrame()
 	end
 
 	local function TranslateTaunt(linename)
-		PrintTable(WHOLE_TEAM_TAUNTS)
 		return WHOLE_TEAM_TAUNTS[linename]
 	end
 
@@ -177,7 +171,6 @@ local function MainFrame()
 
 	CreateStyledButton(LEFT,86,"Play Taunt Locally",{5,5,5,5},"vgui/phehud/btn_play.vmt",FILL, function()
 		if hastaunt then
-			print(list:GetLine(list:GetSelectedLine()):GetValue(1))
 			local getline = TranslateTaunt(list:GetLine(list:GetSelectedLine()):GetValue(1))
 			surface.PlaySound(getline)
 		end
@@ -230,12 +223,12 @@ local function MainFrame()
 end
 
 concommand.Add("ph_showtaunts", function()
-if LocalPlayer():Alive() && isforcedclose != true && LocalPlayer():GetObserverMode() == OBS_MODE_NONE then
+if LocalPlayer():Alive() && LocalPlayer():GetObserverMode() == OBS_MODE_NONE then
 	if isopened != true then
 		MainFrame()
 	end
 else
-	chat.AddText(Color(220,40,0),"[PH:E Taunts] Notice: ",Color(220,220,220), "You can only play custom taunts when you\'re alive as prop/hunter!")
+	chat.AddText("You can only taunt when you're alive.")
 end
 end, nil, "Show Prop Hunt taunt list, so you can select and play for self or play as a taunt.")
 

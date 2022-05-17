@@ -22,7 +22,9 @@ PHE.SVAdmins = {
 }
 
 -- Banned Props models
-PHE.BANNED_PROP_MODELS = {}
+PHE.BANNED_PROP_MODELS = {
+	"models/props_collectables/piepan.mdl"
+}
 
 -- Custom Player Model bans for props
 PHE.PROP_PLMODEL_BANS = {
