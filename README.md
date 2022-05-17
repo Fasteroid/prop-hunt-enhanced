@@ -1,44 +1,15 @@
-# Wolvin's - Prop Hunt: ENHANCED v.16 Rev. A
-
+# Prop Hunt: INFINITY
 ![Prop Hunt: Enhanced Logo](https://i.ibb.co/7Yq3PhX/image.png "Prop Hunt: Enhanced v.15")
+### A fork of Prop Hunt: ENHANCED by Wolvindra
 
-## Base Information
-**Version: 16, Revision: A, Release Type: PreRelease**
+*Prop Hunt: Infinity* is a further improved version of *Wolvin's Prop Hunt: Enhanced*.<br>
+The main change is to the taunt menu, which now supports essentially infinite taunts with less hassle than the original.
 
-Prop Hunt: Enhanced is now mantained by [GFL](https://www.gflclan.com) clan, as Wolvindra, creator of PHE is no longer able to mantain/update the gamemode by himself.
+This fork is hosted on my server, *Props Beyond Infinity*, available at the IP below:<br>
+`76.111.171.96:27016`
 
-[Join our discord](https://discord.gg/eyPAZ4s) to discuss bugs, features, recomendations and get notified on changes and updates.
+### Donate
+Wolvindra is to thank for both PH:Enhanced and several of the most popular Prop Hunt maps. &nbsp;You can donate to him [here](https://prophunt.wolvindra.net/?go=donate) if you're feeling particulary generous.
 
-### Main gamemode Description
-Prop Hunt: Enhanced is an enhanced version of Classic original **Prop Hunt** Gamemode. The gamemode is focused to be always maintained and fully customizable with many things.
-The gamemode also includes several many major changes including the HUD, the code optimisation, Player skins, and other kind of additional features.
-
-The gamemode was contributted to the old Classic Prop Hunt as for the fixes on march 2015 update (which completely broken) with the viewmodel fix additions. The classic version may no longer be maintained anymore.
-
-
-### Available Links & Public Server Tests
-
-#### Available Servers
-- Soup Network: 103.193.80.135:28380
-- GFL Clan Server: 208.103.169.70:27030
-
-#### Links
-
-[**Workshop Version**](https://steamcommunity.com/sharedfiles/filedetails/?id=1754658833)
-
-## Required Addons
-* ULX Admin Mod. ( Workshop or Legacy Download: http://ulyssesmod.net/downloads.php )
-* (Optional) M9K/TFA Base. You can optionally subscribe the M9K weapon base if you wish to use custom weapon base for bonus weapon, otherwise will use from default sandbox weapon base.
-
-## Donate
-Currently, the project is not mantained by Wolvindra, but you can still donate to him [here](https://prophunt.wolvindra.net/?go=donate).
-
-## Reporting an Issue
-
-### Reporting game issue (Bugs/Glitches)
-Please provide information with detail so we know what's the actual problem that can occurs on your side. This issue page is not a place for asking help.
-
-[Or you can join our discord instead.](https://discord.gg/eyPAZ4s)
-
-### Community Discussion Thread
-If you wish to use help, please [open a discussion thread from workshop here](http://steamcommunity.com/sharedfiles/filedetails/discussions/1754658833).
+### Reporting Issues
+If you find any problems, open an issue on this repo with a minimally reproducable example. &nbsp;It will be fixed as soon as I get around to it.
