@@ -55,23 +55,33 @@ function CLASS:OnSpawn(pl)
 	end
 	local lockfunc = function()
 		if pl:IsValid() then
-			pl.Lock(pl)
+			pl:Lock()
+			pl:SetNWBool("PH:Infinity.Locked",true)
 		end
 	end
 	local unlockfunc = function()
 		if pl:IsValid() then
-			pl.UnLock(pl)
+			pl:UnLock()
+			pl:SetNWBool("PH:Infinity.Locked",false)
 		end
 	end
 
-	if unlock_time > 2 then
+	if unlock_time > 0 then
 		pl:Blind(true)
 
 		timer.Simple(unlock_time, unblindfunc)
 
-		timer.Simple(2, lockfunc)
+		timer.Simple(1, lockfunc)
 		timer.Simple(unlock_time, unlockfunc)
 	end
+
+	-- Delay start the AutoTaunt stuff and Control Tutorial
+	timer.Simple(1, function()
+		if IsValid(pl) then
+			net.Start("PH_ShowTutor")
+			net.Send(pl)
+		end
+	end)
 
 end
 

@@ -55,6 +55,19 @@ local function MainFrame()
 		hastaunt = false
 	end
 
+	-- removing this was dumb on my part
+	-- TODO: modify this behavior directly in init.lua
+	--[[
+		local function frame_Think_Force()
+			if isforcedclose == true && isopened == true then
+				isopened = false
+				hastaunt = false
+				frame:Close()
+			end
+		end
+		hook.Add("Think", "CloseWindowFrame_Force", frame_Think_Force)
+	]]--
+
 	local list = vgui.Create("DListView", frame)
 
 	list:SetMultiSelect(false)
@@ -238,3 +251,4 @@ local function BindPress(ply, bind, pressed)
 	end
 end
 hook.Add("PlayerBindPress", "PlayerBindPress_menuContext", BindPress)
+-- init.lua

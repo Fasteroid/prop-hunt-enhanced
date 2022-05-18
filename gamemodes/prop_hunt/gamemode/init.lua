@@ -13,6 +13,7 @@ AddCSLuaFile("cl_menu.lua")
 AddCSLuaFile("cl_targetid.lua")
 AddCSLuaFile("cl_autotaunt.lua")
 AddCSLuaFile("cl_credits.lua")
+AddCSLuaFile("cl_spotting.lua")
 
 -- Include the required lua files
 include("sv_networkfunctions.lua")
@@ -22,6 +23,7 @@ include("sv_tauntloader.lua")
 include("sv_admin.lua")
 include("sv_autotaunt.lua")
 include("sv_tauntwindow.lua")
+include("sv_spotting.lua")
 
 include("sv_bbox_addition.lua")
 
@@ -41,7 +43,7 @@ PHE.UPDATE_CVAR_TO_VARIABLE = 0
 -- Spectator check
 PHE.SPECTATOR_CHECK = 0
 
--- Player Join/Leave message
+--[[ Player Join/Leave message
 gameevent.Listen( "player_authed" )
 hook.Add( "player_authed", "AnnouncePLJoin", function( data )
 	for k, v in pairs( player.GetAll() ) do
@@ -55,8 +57,10 @@ hook.Add( "player_disconnect", "AnnouncePLLeave", function( data )
 		v:PrintMessage( HUD_PRINTTALK, data.name .. " has left the server (Reason: " .. data.reason .. ")" )
 	end
 end )
+]]--
 
 -- Force Close taunt window function, determined whenever the round ends, or team winning.
+-- TODO: rework this so people can taunt at the end of the round
 local function ForceCloseTauntWindow(num)
 	if num == 1 then
 		net.Start("PH_ForceCloseTauntWindow")
@@ -289,7 +293,7 @@ function GM:PlayerExchangeProp(pl, ent)
 	if !IsValid(pl) then return; end
 	if !IsValid(ent) then return; end
 
-	if pl:Team() == TEAM_PROPS && pl:IsOnGround() && !pl:Crouching() && table.HasValue(PHE.USABLE_PROP_ENTITIES, ent:GetClass()) && ent:GetModel() then
+	if pl:Team() == TEAM_PROPS && table.HasValue(PHE.USABLE_PROP_ENTITIES, ent:GetClass()) && ent:GetModel() then
 		if table.HasValue(PHE.BANNED_PROP_MODELS, ent:GetModel()) then
 			pl:ChatPrint("[PH: Enhanced] Notice: That prop has been banned from the server.")
 		elseif IsValid(ent:GetPhysicsObject()) && IsValid (pl.ph_prop) && (pl.ph_prop:GetModel() != ent:GetModel() || pl.ph_prop:GetSkin() != ent:GetSkin()) then
@@ -375,7 +379,6 @@ function GM:PlayerExchangeProp(pl, ent)
 	end
 end
 
--- Called when a player tries to use an object. By default this pressed ['E'] button. MouseClick 1 will be mentioned below at line @351
 function GM:PlayerUse(pl, ent)
 	if !pl:Alive() || pl:Team() == TEAM_SPECTATOR || pl:Team() == TEAM_UNASSIGNED then return false; end
 

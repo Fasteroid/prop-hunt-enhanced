@@ -83,6 +83,13 @@ local autoBalance = CreateConVar("ph_autoteambalance", "1", { FCVAR_SERVER_CAN_E
 -- Custom pickup (0 = no one lifts bro; 1 = everyone allowed to pick up props; 2 = only hunters can pick up (props can still become them))
 local pickupMode = CreateConVar("ph_allow_prop_pickup", "1", { FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Allow players to pick up small props")
 
+local convar_flags = {FCVAR_SERVER_CAN_EXECUTE, FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}
+CreateConVar("ph_spot_min_dot", "0.92", convar_flags, "Minimum dot product required to spot, higher = better aim required.")
+CreateConVar("ph_spot_highlight_time", "10", convar_flags, "Amount of time to highlight spotted props for.")
+CreateConVar("ph_respot_immunity_time", "6", convar_flags, "Amount of time to ignore re-spotting for.")
+CreateConVar("ph_spot_fail_antispam", "8", convar_flags, "Amount of time to disable spotting if they miss.")
+CreateConVar("ph_spot_point_value", "50", convar_flags, "Amount of points to award for spotting.")
+
 GM.ForceJoinBalancedTeams = joinBalance:GetBool()
 GM.AutomaticTeamBalance = autoBalance:GetBool()
 

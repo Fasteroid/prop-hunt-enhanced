@@ -35,6 +35,7 @@ include("cl_menu.lua")
 include("cl_tauntwindow.lua")
 include("cl_targetid.lua")
 include("cl_autotaunt.lua")
+include("cl_spotting.lua")
 
 include("cl_credits.lua")
 
@@ -337,11 +338,22 @@ end
 -- 			Net Receives Hooks 			--
 -- ///////////////////\\\\\\\\\\\\\\\\\ --
 
-local tutormat = Material ("vgui/hud_control_help.png")
-local curshow = 0
-net.Receive("PH_ShowTutor", function()
-	if GetConVar("ph_show_tutor_control"):GetBool() && LocalPlayer():Alive() && !tutormat:IsError () && curshow <= 2 then
+local tutormats
+local curshows
 
+hook.Add("Think","nilindexfix", function() -- fix stupid nil index error
+	if TEAM_PROPS ~= nil then
+		tutormats = {[TEAM_PROPS] = Material("vgui/hud_control_help_props.png"), [TEAM_HUNTERS] = Material("vgui/hud_control_help_hunters.png")}
+		curshows  = {[TEAM_PROPS] = 0, [TEAM_HUNTERS] = 0}
+	end
+	hook.Remove("Think","nilindexfix")
+end)
+
+net.Receive("PH_ShowTutor", function()
+
+	if GetConVar("ph_show_tutor_control"):GetBool() && LocalPlayer():Alive() then
+		local team = LocalPlayer():Team()
+		
 			local xNotify = vgui.Create( "DNotify" )
 			xNotify:SetPos( ScrW() - 300 , 60 )
 			xNotify:SetSize( 256, 256 )
@@ -352,12 +364,12 @@ net.Receive("PH_ShowTutor", function()
 			bg:SetBackgroundColor( Color( 16, 16, 16, 180 ) )
 
 			local image = vgui.Create( "DImage", bg )
-			image:SetMaterial(tutormat)
+			image:SetMaterial(tutormats[team])
 			image:Dock(FILL)
 
 			xNotify:AddItem(bg)
 
-			curshow = curshow + 1
+			curshows[team] = curshows[team] + 1
 	end
 end)
 
