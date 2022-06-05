@@ -102,18 +102,18 @@ end )
 
 local receive_handlers = { 
     [1] = function() -- spot fail client sound
-        surface.PlaySound("ui/spot-fail.wav")
-        timer.Simple(SPOT_FAIL_COOL, function() surface.PlaySound("ui/spot-ready.wav") end)
+        surface.PlaySound("ui/spot_fail.wav")
+        timer.Simple(SPOT_FAIL_COOL, function() surface.PlaySound("ui/spot_ready.wav") end)
     end,
     [2] = function() -- spot success client sound
-        surface.PlaySound("ui/spot-hunter-client.wav")
+        surface.PlaySound("ui/spot_hunter_client.wav")
         notification.AddLegacy( "You've been awarded "..SPOT_POINT_VALUE.." pointshop points for spotting a fleeing prop!", NOTIFY_GENERIC, 6)
     end,
     [3] = function() -- spot success team sound
-        surface.PlaySound("ui/spot-hunter-global.wav")
+        surface.PlaySound("ui/spot_hunter_global.wav")
     end,
     [4] = function() -- scare the prop player with an ominous sound
-        surface.PlaySound("ui/spot-prop.wav")
+        surface.PlaySound("ui/spot_prop.wav")
     end,
     [5] = function() -- add them to halo drawing
         setHalo( net.ReadEntity(), SPOT_GLOW_TIME )
@@ -125,6 +125,8 @@ net.Receive("PH:Infinity.Spot", function()
     receive_handlers[enum]()
 end)
 
+
+local pointer = Material( "ph_infinity/spotted_pointer.png" )
 
 local function HUDPaint()
 
@@ -145,7 +147,7 @@ local function HUDPaint()
                 local rad = math.atan2(poscr.y-cY, poscr.x-cX)
                 local deg = 0 - math.Round(math.deg(rad))
                 surface.SetDrawColor(255,255,255,255)
-                surface.SetTexture(surface.GetTextureID("prophunt_infinity/spotted_pointer"))
+                surface.SetMaterial( pointer )
                 surface.DrawTexturedRectRotated(math.cos(rad) * r + cX, math.sin(rad) * r + cY,128,128,deg + 90)
                 surface.SetMaterial( obj.mater )
                 r = r - 16
