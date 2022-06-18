@@ -27,7 +27,7 @@ concommand.Add( "ph_spot", InitiateSpot )
 hook.Add("PlayerButtonDown","PH:Infinity.Spot", function(ply, key)
 
     if not IsFirstTimePredicted() then return end -- stupid hook
-    if key ~= KEY_F4 then return end -- todo: add a convar for this
+    if key ~= KEY_Q then return end
     RunConsoleCommand("ph_spot")
 
 end)
@@ -107,7 +107,6 @@ local receive_handlers = {
     end,
     [2] = function() -- spot success client sound
         surface.PlaySound("ui/spot_hunter_client.wav")
-        notification.AddLegacy( "You've been awarded "..SPOT_POINT_VALUE.." pointshop points for spotting a fleeing prop!", NOTIFY_GENERIC, 6)
     end,
     [3] = function() -- spot success team sound
         surface.PlaySound("ui/spot_hunter_global.wav")

@@ -4,6 +4,16 @@ local function requestTaunts()
 	print("Requesting taunts...")
 end
 
+local function consolidate(trunk)
+	local pool = {}
+	for _, branch in pairs(trunk) do
+		for _, leaf in pairs(branch) do
+			table.insert(pool, leaf)
+		end
+	end
+	return pool
+end
+
 hook.Add( "InitPostEntity", "PHRequestTaunts", function() -- this was breaking for some reason when we did it on tick 1
     requestTaunts()
 end )
@@ -17,6 +27,9 @@ net.Receive("PH_TauntRequest",function()
     local data = util.JSONToTable( util.Decompress( net.ReadData(length) ) )
     PHE.TAUNTS.HUNTERS = data.h
     PHE.TAUNTS.PROPS = data.p
+	PHE.TAUNTS.PROPS_CONCOMMAND = consolidate(data.p)
+	PHE.TAUNTS.HUNTERS_CONCOMMAND = consolidate(data.h)
+	PrintTable(PHE.TAUNTS)
 	print("Taunts received.")
 end)
 

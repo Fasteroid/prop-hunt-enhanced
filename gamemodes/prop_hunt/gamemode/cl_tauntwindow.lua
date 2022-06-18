@@ -23,6 +23,12 @@ net.Receive("PH_AllowTauntWindow", function()
 	isforcedclose = false
 end)
 
+local function SendTaunt(snd)
+	net.Start("CL2SV_PlayThisTaunt")
+		net.WriteString(tostring(snd))
+	net.SendToServer();
+end
+
 local function MainFrame()
 	if GetConVar("ph_enable_custom_taunts"):GetInt() < 1 then
 		return
@@ -176,12 +182,6 @@ local function MainFrame()
 		return WHOLE_TEAM_TAUNTS[linename]
 	end
 
-	local function SendToServer(snd)
-		net.Start("CL2SV_PlayThisTaunt")
-			net.WriteString(tostring(snd))
-		net.SendToServer();
-	end
-
 	CreateStyledButton(LEFT,86,"Play Taunt Locally",{5,5,5,5},"vgui/phehud/btn_play.vmt",FILL, function()
 		if hastaunt then
 			local getline = TranslateTaunt(list:GetLine(list:GetSelectedLine()):GetValue(1))
@@ -191,14 +191,14 @@ local function MainFrame()
 	CreateStyledButton(LEFT,86,"Play Taunt Globally",{5,5,5,5}, "vgui/phehud/btn_playpub.vmt",FILL, function()
 		if hastaunt then
 			local getline = TranslateTaunt(list:GetLine(list:GetSelectedLine()):GetValue(1))
-			SendToServer(getline)
+			SendTaunt(getline)
 		end
 	end)
 	CreateStyledButton(LEFT,86,"Play Taunt Globally and Close",{5,5,5,5},"vgui/phehud/btn_playx.vmt",FILL, function()
 		if hastaunt then
 			local getline = TranslateTaunt(list:GetLine(list:GetSelectedLine()):GetValue(1))
 
-			SendToServer(getline)
+			SendTaunt(getline)
 			frame:Close()
 		end
 	end)
@@ -212,8 +212,8 @@ local function MainFrame()
 
 		local menu = DermaMenu()
 		menu:AddOption("Play (Local)", function() surface.PlaySound(getline); print("Playing: " .. getline); end):SetIcon("icon16/control_play.png")
-		menu:AddOption("Play (Global)", function() SendToServer(getline); end):SetIcon("icon16/sound.png")
-		menu:AddOption("Play and Close (Global)", function() SendToServer(getline); frame:Close(); end):SetIcon("icon16/sound_delete.png")
+		menu:AddOption("Play (Global)", function() SendTaunt(getline); end):SetIcon("icon16/sound.png")
+		menu:AddOption("Play and Close (Global)", function() SendTaunt(getline); frame:Close(); end):SetIcon("icon16/sound_delete.png")
 		menu:AddSpacer()
 		menu:AddOption("Close Menu", function() frame:Close(); end):SetIcon("icon16/cross.png")
 		menu:Open()
@@ -226,7 +226,7 @@ local function MainFrame()
 	list.DoDoubleClick = function(id,line)
 		hastaunt = true
 		local getline = TranslateTaunt(list:GetLine(list:GetSelectedLine()):GetValue(1))
-		SendToServer(getline)
+		SendTaunt(getline)
 
 		if GetConVar("ph_cl_autoclose_taunt"):GetBool() then frame:Close(); end
 	end
@@ -235,16 +235,77 @@ local function MainFrame()
 	frame:SetKeyboardInputEnabled(false)
 end
 
-concommand.Add("ph_showtaunts", function()
-if LocalPlayer():Alive() && LocalPlayer():GetObserverMode() == OBS_MODE_NONE then
-	if isopened != true then
-		MainFrame()
-	end
-else
-	chat.AddText("You can only taunt when you're alive.")
+---- concommand for playing taunts directly ----
+local function trimToDepth(str, depth)
+	local explode = string.Explode("/",str)
+	if depth > #explode then return end
+	return table.concat(explode, "/", 1, depth)
 end
+
+local function ConCommand_FilterAdd(pool, items, filter)
+	local depth = #string.Explode("/",filter)
+	local cache = {}
+	for k, v in ipairs(items) do
+		v = trimToDepth(v, depth)
+		if not v then return end
+		if string.StartWith(v, filter) and not cache[v] then
+			cache[v] = true
+			table.insert(pool, "ph_taunt " .. v)
+		end
+	end
+end
+
+local function ConCommand_SendTaunt(ply, cmd, args)
+	SendTaunt(args[1])
+end
+
+local hint = false
+local function ConCommand_Autocomplete(cmd, stringargs) -- this isn't perfect by any means, but it works
+
+	if not hint then 
+		local menu = Color(200,200,200)
+		local auto = Color(150,255,255)
+		local user = Color(255,255,150)
+		local whit = Color(255,255,255)
+		MsgC( menu, "┌────────────────────────────────────────────────┐\n" ) -- 48
+		MsgC( menu, "│                                                │\n" ) -- 48
+		MsgC( menu, "│    ", whit, "Incremental autocomplete example usage:", menu, "     │\n" )
+		MsgC( menu, "│     ", user, "ph_taunt ", auto, "props", user, "/", auto, "miscellaneous", user, "/", auto, "bruh.mp3", menu, "      │\n" )
+		MsgC( menu, "│", user,"                   ^             ^              ", menu, "│\n" ) -- 48
+		MsgC( menu, "│   ", user, "██ - type to advance     ", auto, "██ - tab to fill", menu, "    │\n")
+		MsgC( menu, "│                                                │\n" ) -- 48
+		MsgC( menu, "└────────────────────────────────────────────────┘\n" ) -- 48
+		hint = true
+	end
+
+	stringargs = string.sub(stringargs, 2) or "'"
+	local options = {}
+	
+	if LocalPlayer():Team() == TEAM_PROPS then
+		ConCommand_FilterAdd(options, PHE.TAUNTS.PROPS_CONCOMMAND, stringargs)
+		ConCommand_FilterAdd(options, PHE.TAUNTS.HUNTERS_CONCOMMAND, stringargs)
+	else
+		ConCommand_FilterAdd(options, PHE.TAUNTS.HUNTERS_CONCOMMAND, stringargs)
+		ConCommand_FilterAdd(options, PHE.TAUNTS.PROPS_CONCOMMAND, stringargs)
+	end
+
+	return options
+end
+
+concommand.Add("ph_taunt", ConCommand_SendTaunt, ConCommand_Autocomplete)
+
+---- concommand for menu ----
+concommand.Add("ph_showtaunts", function()
+	if LocalPlayer():Alive() && LocalPlayer():GetObserverMode() == OBS_MODE_NONE then
+		if isopened != true then
+			MainFrame()
+		end
+	else
+		chat.AddText("You can only taunt when you're alive.")
+	end
 end, nil, "Show Prop Hunt taunt list, so you can select and play for self or play as a taunt.")
 
+---- run menu concommand on context menu bind ----
 local function BindPress(ply, bind, pressed)
 	if string.find(bind, "+menu_context") && pressed then
 		RunConsoleCommand("ph_showtaunts")

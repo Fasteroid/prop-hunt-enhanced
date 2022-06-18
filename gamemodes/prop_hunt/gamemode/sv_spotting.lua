@@ -106,7 +106,7 @@ net.Receive("PH:Infinity.Spot", function(_,hunter)
     victim:EmitSound(randomtaunt)
 
     victim.nextSpot = CurTime() + SPOT_IMMUNE_TIME
-    hunter:PS2_AddStandardPoints(SPOT_POINT_VALUE)
+    hunter:PS2_AddStandardPoints(SPOT_POINT_VALUE,"Spotted a prop!")
     
 end)
 
