@@ -4,7 +4,7 @@ local function IsTaunting(ply)
 end
 
 local function CanWaitHint(ply)
-	return ply.WaitHint < CurTime()
+	return (ply.WaitHint or 0) < CurTime()
 end
 
 local TEAM_TAUNT_DIRS = {}
