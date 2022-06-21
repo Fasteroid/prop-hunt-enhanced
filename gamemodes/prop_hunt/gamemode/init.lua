@@ -60,7 +60,7 @@ end )
 ]]--
 
 -- Force Close taunt window function, determined whenever the round ends, or team winning.
--- TODO: rework this so people can taunt at the end of the round
+-- TODO: rework this so people can taunt at the end of the round [done]
 local function ForceCloseTauntWindow(num)
 	if num == 1 then
 		net.Start("PH_ForceCloseTauntWindow")
@@ -794,15 +794,9 @@ function PlayerPressedKey(pl, key)
 			if pl:GetPlayerLockedRot() then
 				pl:SetNWBool("PlayerLockedRotation", false)
 				pl:PrintMessage(HUD_PRINTCENTER, PHE.LANG.HUD.ROTLOCKOFF)
-				net.Start("PHE.rotateState")
-					net.WriteInt(0, 2)
-				net.Send(pl)
 			else
 				pl:SetNWBool("PlayerLockedRotation", true)
 				pl:PrintMessage(HUD_PRINTCENTER, PHE.LANG.HUD.ROTLOCKON)
-				net.Start("PHE.rotateState")
-					net.WriteInt(1, 2)
-				net.Send(pl)
 			end
 		end
 	end

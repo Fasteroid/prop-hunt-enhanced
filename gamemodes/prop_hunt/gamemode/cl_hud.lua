@@ -59,16 +59,6 @@ local hide = {
 }
 
 local curteam
-local mat = {
-	[1] = 	Material("vgui/phehud/res_hp_1"),
-	[2] = 	Material("vgui/phehud/res_hp_2"),
-}
-local indic = {
-	rotate 	= { mat = Material("vgui/phehud/i_rotate"), [0]	= Color(190,190,190,255), [1] = Color(255,255,0,255) },
-	halo 	= { mat = Material("vgui/phehud/i_halo"), 	[0]	= Color(190,190,190,255), [1] = Color(0,255,0,255) },
-	light 	= { mat = Material("vgui/phehud/i_light"), 	[0]	= Color(190,190,190,255), [1] = Color(255,255,0,255) },
-	armor	= { mat = Material("vgui/phehud/i_shield"),	[0] = Color(190,190,190,255), [1] = Color(80,190,255,255) }
-}
 local hudtopbar = {
 	mat = Material("vgui/phehud/hud_topbar"),
 	x	= 0,
@@ -77,7 +67,6 @@ local hudtopbar = {
 local matw = Material("vgui/phehud/res_wep")
 
 local ava
-	if (IsValid(ava)) then ava:Remove() ava = nil end
 local pos = { x = 0, y = ScrH() - 130 }
 local posw = { x = ScrW() - 480, y = ScrH() - 130 }
 local hp
@@ -95,9 +84,6 @@ hook.Add("HUDShouldDraw", "PHE.ShouldHideHUD", function(hudname)
 	end
 end)
 
-local Rstate = 0
-net.Receive("PHE.rotateState", function() Rstate = net.ReadInt(2) end)
-
 local function PopulateAliveTeam(tm)
 	local tim = team.GetPlayers(tm)
 	local liveply = liveply || 0
@@ -111,6 +97,54 @@ end
 
 local state = false
 local disabledcolor = Color(100,100,100,255)
+
+local matb = {
+	[TEAM_HUNTERS] = Material("vgui/phehud/res_hp_1"), -- shame on you for not using the enums, wolvin
+	[TEAM_PROPS] =	 Material("vgui/phehud/res_hp_2")
+}
+
+local SPOT_GLOW_TIME = GetConVar("ph_spot_highlight_time"):GetFloat()
+
+local ICON_START = 168
+local ICON_WIDTH = 48
+local icons = {
+	[TEAM_HUNTERS] = {
+		armor = { 
+			mat = Material("vgui/phehud/i_shield"),	
+			[false] = Color(120,120,120,255), 
+			[true] 	= Color(80,190,255,255),
+			state 	= function() return LocalPlayer():Armor() > 0 end
+		},
+		spotting = {
+			mat		= Material("vgui/phehud/i_spot.png"), -- to replace
+			[false]	= Color(120,120,120,255), 
+			[true]	= Color(255,255,255,255),
+			state   = function() return LocalPlayer():GetNWFloat("PH:Infinity.SpotCooldown", 0) < CurTime() end
+		}
+	},
+	[TEAM_PROPS] = {
+		rotate = { 
+			mat		= Material("vgui/phehud/i_rotate"), 
+			[false]	= Color(120,120,120,255), 
+			[true]	= Color(255,255,0,255),
+			state   = function() return LocalPlayer():GetNWBool("PlayerLockedRotation", false) end
+		},
+		spotted = {
+			mat		= Material("vgui/phehud/i_spot.png"), -- to replace
+			[false]	= Color(120,120,120,255), 
+			[true]	= Color(255,100,50,255),
+			state   = function() return (CurTime() - (GLOBAL_LOCAL_LASTSPOTTED or 0) ) < SPOT_GLOW_TIME end
+		}
+	}
+}
+
+
+-- local indic = {
+-- 	rotate 	= { mat = Material("vgui/phehud/i_rotate"), [0]	= Color(190,190,190,255), [1] = Color(255,255,0,255) },
+-- 	halo 	= { mat = Material("vgui/phehud/i_halo"), 	[0]	= Color(190,190,190,255), [1] = Color(0,255,0,255) },
+-- 	light 	= { mat = Material("vgui/phehud/i_light"), 	[0]	= Color(190,190,190,255), [1] = Color(255,255,0,255) },
+-- 	armor	= { mat = Material("vgui/phehud/i_shield"),	[0] = Color(190,190,190,255), [1] = Color(80,190,255,255) }
+-- }
 
 hook.Add("HUDPaint", "PHE.MainHUD", function()
 
@@ -137,7 +171,7 @@ hook.Add("HUDPaint", "PHE.MainHUD", function()
 		armor = LocalPlayer():Armor()
 
 		surface.SetDrawColor( 255, 255, 255, 255 )
-		surface.SetMaterial( mat[curteam] )
+		surface.SetMaterial( matb[curteam] )
 		surface.DrawTexturedRect( pos.x, pos.y, 480, 120 )
 
 		draw.DrawText( PHE.LANG.HUD.HEALTH, "PHE.Trebuchet", pos.x + 175, pos.y + 14, color_white, TEXT_ALIGN_LEFT )
@@ -164,37 +198,16 @@ hook.Add("HUDPaint", "PHE.MainHUD", function()
 		draw.DrawText( hp, "PHE.HealthFont", pos.x + 350, pos.y - 4, hpcolor, TEXT_ALIGN_RIGHT )
 		draw.DrawText( " / " .. armor, "PHE.ArmorFont", pos.x + 350, pos.y + 14, Color( 255,255,255,255 ), TEXT_ALIGN_LEFT )
 
-		if LocalPlayer():Team() == TEAM_HUNTERS then
-			surface.SetDrawColor(disabledcolor)
-		else
-			surface.SetDrawColor( indic.rotate[Rstate] )
-		end
-		surface.SetMaterial( indic.rotate.mat )
-		surface.DrawTexturedRect( pos.x + 168, pos.y + 74, 32, 32 )
+		local iconset = icons[ LocalPlayer():Team() ]
 
-		if LocalPlayer():Team() == TEAM_HUNTERS then
-			surface.SetDrawColor(indic.light[LocalPlayer ():FlashlightIsOn () && 1 || 0])
-		else
-			surface.SetDrawColor( indic.light[CL_GLOBAL_LIGHT_STATE] )
+		local offset = ICON_START
+		for k, ico in pairs(iconset) do
+			surface.SetDrawColor( ico[ ico.state() ] )
+			surface.SetMaterial( ico.mat )
+			surface.DrawTexturedRect( pos.x + offset, pos.y + 74, 32, 32 )
+			offset = offset + ICON_WIDTH
 		end
-		surface.SetMaterial( indic.light.mat )
-		surface.DrawTexturedRect( pos.x + 216, pos.y + 74, 32, 32 )
 
-		if LocalPlayer():Team() == TEAM_HUNTERS then
-			surface.SetDrawColor(disabledcolor)
-		else
-			surface.SetDrawColor( indic.halo[tonumber(GetConVar("ph_cl_halos"):GetInt())])
-		end
-		surface.SetMaterial( indic.halo.mat )
-		surface.DrawTexturedRect( pos.x + 264, pos.y + 74, 32, 32 )
-
-		if LocalPlayer():Armor() < 10 then
-			surface.SetDrawColor( indic.armor[0] )
-		else
-			surface.SetDrawColor( indic.armor[1] )
-		end
-		surface.SetMaterial( indic.armor.mat )
-		surface.DrawTexturedRect (pos.x + 312, pos.y + (2 * 37), 32, 32 )
 	end
 
 	-- Weapon HUD

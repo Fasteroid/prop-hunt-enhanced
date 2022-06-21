@@ -6,7 +6,7 @@ local SPOT_IMMUNE_TIME = GetConVar("ph_respot_immunity_time"):GetFloat()
 local SPOT_FAIL_COOL = GetConVar("ph_spot_fail_antispam"):GetFloat()
 local SPOT_POINT_VALUE = GetConVar("ph_spot_point_value"):GetInt()
 
-function InitiateSpot()
+function PHE:Spot()
 
     if LocalPlayer():Team() ~= TEAM_HUNTERS then return end -- we'll check again serverside for good measure
     if not LocalPlayer():Alive() then return end -- also check this serverside
@@ -22,18 +22,18 @@ function InitiateSpot()
 
 end
 
-concommand.Add( "ph_spot", InitiateSpot )
+concommand.Add( "ph_spot", PHE.Spot )
 
 hook.Add("PlayerButtonDown","PH:Infinity.Spot", function(ply, key)
 
     if not IsFirstTimePredicted() then return end -- stupid hook
-    if key ~= KEY_Q then return end
+    if key ~= KEY_G then return end
     RunConsoleCommand("ph_spot")
 
 end)
 
-
-local halo_objects = {}
+PHE.SpotHalos = PHE.SpotHalos or {}
+local halo_objects = PHE.SpotHalos
 
 local function unsetHalo(ent)
     local obj = halo_objects[ent]
@@ -43,7 +43,7 @@ local function unsetHalo(ent)
     end
 end
 
-function getSpawnIconPath(model)
+local function getSpawnIconPath(model)
     return "spawnicons/" .. string.StripExtension(model) .. ".png"
 end
 
@@ -68,7 +68,7 @@ local function setHalo(ent, time)
     end
 end
 
-function getGlowColor(obj)
+local function getGlowColor(obj)
     local mul = math.Clamp( ( obj.delete - CurTime() ) * 2 / obj.time, 0, 1 )
     return Color(255 * mul,100 * mul,50 * mul)
 end
@@ -113,6 +113,7 @@ local receive_handlers = {
     end,
     [4] = function() -- scare the prop player with an ominous sound
         surface.PlaySound("ui/spot_prop.wav")
+        GLOBAL_LOCAL_LASTSPOTTED = CurTime()
     end,
     [5] = function() -- add them to halo drawing
         setHalo( net.ReadEntity(), SPOT_GLOW_TIME )

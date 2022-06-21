@@ -141,7 +141,12 @@ local function MainFrame()
 
 	for group, tbl in pairs(TEAM_TAUNTS) do
 		comb:AddChoice(group)
-		lastcategory = lastcategory or group
+	end
+
+	if LocalPlayer():Team() == TEAM_HUNTERS then
+		lastcategory = lastcategory or "searching"
+	else
+		lastcategory = lastcategory or "annoying"
 	end
 
 	comb:SetValue(lastcategory)

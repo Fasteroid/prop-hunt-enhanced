@@ -29,8 +29,6 @@ net.Receive("PH_TauntRequest",function()
     PHE.TAUNTS.PROPS = data.p
 	PHE.TAUNTS.PROPS_CONCOMMAND = consolidate(data.p)
 	PHE.TAUNTS.HUNTERS_CONCOMMAND = consolidate(data.h)
-	PrintTable(PHE.TAUNTS)
-	print("Taunts received.")
 end)
 
 -- this really should be in a shared file but I'm lazy

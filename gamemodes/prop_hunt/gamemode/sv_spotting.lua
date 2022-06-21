@@ -101,12 +101,12 @@ net.Receive("PH:Infinity.Spot", function(_,hunter)
     net.Send(victim)
 
     -- force the prop to taunt with a fear taunt
-    local randomtaunt = pickRandom(PHE.TAUNTS.PROPS.fear)
+    local randomtaunt = "taunts/" .. pickRandom(PHE.TAUNTS.PROPS.fear)
     victim:SetNWFloat("NextCanTaunt", CurTime() + NewSoundDuration("sound/" .. randomtaunt))
     victim:EmitSound(randomtaunt)
 
     victim.nextSpot = CurTime() + SPOT_IMMUNE_TIME
-    hunter:PS2_AddStandardPoints(SPOT_POINT_VALUE,"Spotted a prop!")
+    hunter:PS2_AddStandardPoints(SPOT_POINT_VALUE,"Spotting Props")
     
 end)
 

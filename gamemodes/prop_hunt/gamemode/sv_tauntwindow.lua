@@ -7,7 +7,11 @@ local function CanWaitHint(ply)
 	return (ply.WaitHint or 0) < CurTime()
 end
 
-local TEAM_TAUNT_DIRS = {}
+-- this now works because I made these enums init sooner
+local TEAM_TAUNT_DIRS = {
+	[TEAM_PROPS] = "taunts/props",
+	[TEAM_HUNTERS] = "taunts/hunters"
+}
 
 net.Receive("CL2SV_PlayThisTaunt", function(len, ply)
 
@@ -27,7 +31,7 @@ net.Receive("CL2SV_PlayThisTaunt", function(len, ply)
 		return
 	end
 
-	local teamdir = ((ply:Team() == TEAM_HUNTERS) and "taunts/hunters") or ((ply:Team() == TEAM_PROPS) and "taunts/props") or "NONE"
+	local teamdir = TEAM_TAUNT_DIRS[ ply:Team() ] or "NONE"
 
 	if not string.StartWith(snd, teamdir) then
 		ply:ChatPrint("[PH: Infinity] - Failed to play taunt! (it doesn't belong to your team!)")
@@ -40,6 +44,11 @@ net.Receive("CL2SV_PlayThisTaunt", function(len, ply)
 	end
 
 	ply:EmitSound(snd, 100)
-	ply:SetNWFloat("NextCanTaunt", CurTime() + NewSoundDuration("sound/" .. snd))
+	local duration = NewSoundDuration("sound/" .. snd)
+	local points   = math.Round(duration)
+	if ply:Team() == TEAM_PROPS and points > 0 then
+		ply:PS2_AddStandardPoints(points,"Taunting")
+	end
+	ply:SetNWFloat("NextCanTaunt", CurTime() + duration)
 
 end)
