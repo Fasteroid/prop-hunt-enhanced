@@ -7,6 +7,12 @@ surface.CreateFont("PHE.TauntFont",
 	shadow = false
 })
 
+surface.CreateFont( "PHE.TauntButtonFont", {
+	font = "Arial", --  Use the font-name which is shown to you by your operating system Font Viewer, not the file name
+	size = 36,
+	antialias = true,
+})
+
 local isplayed = false
 local isopened = false
 local isforcedclose = false
@@ -84,7 +90,7 @@ local function MainFrame()
 	list:Dock(BOTTOM)
 
 	local TEAM_TAUNTS = PHE:GetTeamTaunt( LocalPlayer():Team() )
-	local WHOLE_TEAM_TAUNTS = PHE:GetAllTeamTaunt( LocalPlayer():Team() )
+	local PATH_LOOKUP = PHE:GetAllTeamTaunt( LocalPlayer():Team() )
 
 	local comb = vgui.Create("DComboBox", frame)
 
@@ -156,71 +162,19 @@ local function MainFrame()
 	local btnpanel = vgui.Create("DPanel", frame)
 	btnpanel:Dock(FILL)
 	btnpanel:SetBackgroundColor(Color(20,20,20,200))
-
-	local function CreateStyledButton(dock,size,ttip,margin,texture,imagedock, btnfunction)
-		local left,top,right,bottom = margin[1],margin[2],margin[3],margin[4]
-
-		local button = vgui.Create("DButton", btnpanel)
-		button:Dock(dock)
-		button:SetSize(size,0)
-		button:DockMargin(left,top,right,bottom)
-		button:SetText("")
-		button:SetTooltip(ttip)
-
-		button.Paint = function(self,w,h)
-			if self:IsHovered() then
-				surface.SetDrawColor(Color(90,90,90,200))
-			else
-				surface.SetDrawColor(Color(0,0,0,0))
-			end
-			surface.DrawRect(0,0,w,h)
-		end
-
-		button.DoClick = btnfunction
-
-		local image = vgui.Create("DImage", button)
-		image:SetImage(texture)
-		image:Dock(imagedock)
-	end
-
-	local function TranslateTaunt(linename)
-		return WHOLE_TEAM_TAUNTS[linename]
-	end
-
-	CreateStyledButton(LEFT,86,"Play Taunt Locally",{5,5,5,5},"vgui/phehud/btn_play.vmt",FILL, function()
-		if hastaunt then
-			local getline = TranslateTaunt(list:GetLine(list:GetSelectedLine()):GetValue(1))
-			surface.PlaySound(getline)
-		end
-	end)
-	CreateStyledButton(LEFT,86,"Play Taunt Globally",{5,5,5,5}, "vgui/phehud/btn_playpub.vmt",FILL, function()
-		if hastaunt then
-			local getline = TranslateTaunt(list:GetLine(list:GetSelectedLine()):GetValue(1))
-			SendTaunt(getline)
-		end
-	end)
-	CreateStyledButton(LEFT,86,"Play Taunt Globally and Close",{5,5,5,5},"vgui/phehud/btn_playx.vmt",FILL, function()
-		if hastaunt then
-			local getline = TranslateTaunt(list:GetLine(list:GetSelectedLine()):GetValue(1))
-
-			SendTaunt(getline)
-			frame:Close()
-		end
-	end)
-	CreateStyledButton(FILL,86,"Close the Window",{5,5,5,5},"vgui/phehud/btn_close.vmt",FILL, function()
-		frame:Close()
-	end)
+	local btntext = vgui.Create("DLabel", btnpanel)
+	btntext:Dock(FILL)
+	btntext:DockMargin(5,5,5,5)
+	btntext:SetText("Double click a taunt to play it!\n\nYou can also right click for more options.")
 
 	list.OnRowRightClick = function(panel,line)
 		hastaunt = true
-		local getline = TranslateTaunt(list:GetLine(list:GetSelectedLine()):GetValue(1))
+		local getline = PATH_LOOKUP[ list:GetLine(list:GetSelectedLine()):GetValue(1) ]
 
 		local menu = DermaMenu()
-		menu:AddOption("Play (Local)", function() surface.PlaySound(getline); print("Playing: " .. getline); end):SetIcon("icon16/control_play.png")
-		menu:AddOption("Play (Global)", function() SendTaunt(getline); end):SetIcon("icon16/sound.png")
-		menu:AddOption("Play and Close (Global)", function() SendTaunt(getline); frame:Close(); end):SetIcon("icon16/sound_delete.png")
-		menu:AddSpacer()
-		menu:AddOption("Close Menu", function() frame:Close(); end):SetIcon("icon16/cross.png")
+		menu:AddOption("Play", function() SendTaunt(getline); frame:Close(); end):SetIcon("icon16/transmit_blue.png")
+		menu:AddOption("Preview", function() surface.PlaySound("taunts/" .. getline) end):SetIcon("icon16/information.png")
+		menu:AddOption("Copy to clipboard", function(self) SetClipboardText(getline) end):SetIcon("icon16/page_white_edit.png")
 		menu:Open()
 	end
 
@@ -230,7 +184,7 @@ local function MainFrame()
 
 	list.DoDoubleClick = function(id,line)
 		hastaunt = true
-		local getline = TranslateTaunt(list:GetLine(list:GetSelectedLine()):GetValue(1))
+		local getline = PATH_LOOKUP[ list:GetLine(list:GetSelectedLine()):GetValue(1) ]
 		SendTaunt(getline)
 
 		if GetConVar("ph_cl_autoclose_taunt"):GetBool() then frame:Close(); end
@@ -301,13 +255,13 @@ concommand.Add("ph_taunt", ConCommand_SendTaunt, ConCommand_Autocomplete)
 
 ---- concommand for menu ----
 concommand.Add("ph_showtaunts", function()
-	if LocalPlayer():Alive() && LocalPlayer():GetObserverMode() == OBS_MODE_NONE then
+	--if LocalPlayer():Alive() && LocalPlayer():GetObserverMode() == OBS_MODE_NONE then
 		if isopened != true then
 			MainFrame()
 		end
-	else
-		chat.AddText("You can only taunt when you're alive.")
-	end
+	--else
+		--chat.AddText("You can only taunt when you're alive.")
+	--end
 end, nil, "Show Prop Hunt taunt list, so you can select and play for self or play as a taunt.")
 
 ---- run menu concommand on context menu bind ----
