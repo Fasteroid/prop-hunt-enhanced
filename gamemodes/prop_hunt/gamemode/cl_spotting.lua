@@ -6,6 +6,8 @@ local SPOT_IMMUNE_TIME = GetConVar("ph_respot_immunity_time"):GetFloat()
 local SPOT_FAIL_COOL = GetConVar("ph_spot_fail_antispam"):GetFloat()
 local SPOT_POINT_VALUE = GetConVar("ph_spot_point_value"):GetInt()
 
+HUDVariables = HUDVariables or {} -- not sure if cl_hud.lua runs first
+
 function PHE:Spot()
 
     if LocalPlayer():Team() ~= TEAM_HUNTERS then return end -- we'll check again serverside for good measure
@@ -32,8 +34,7 @@ hook.Add("PlayerButtonDown","PH:Infinity.Spot", function(ply, key)
 
 end)
 
-PHE.SpotHalos = PHE.SpotHalos or {}
-local halo_objects = PHE.SpotHalos
+local halo_objects = {}
 
 local function unsetHalo(ent)
     local obj = halo_objects[ent]
@@ -107,13 +108,14 @@ local receive_handlers = {
     end,
     [2] = function() -- spot success client sound
         surface.PlaySound("ui/spot_hunter_client.wav")
+        HUDVariables.SpotSuccess = CurTime() + 2
     end,
     [3] = function() -- spot success team sound
         surface.PlaySound("ui/spot_hunter_global.wav")
     end,
     [4] = function() -- scare the prop player with an ominous sound
         surface.PlaySound("ui/spot_prop.wav")
-        GLOBAL_LOCAL_LASTSPOTTED = CurTime()
+        HUDVariables.LastSpotted = CurTime() + SPOT_GLOW_TIME
     end,
     [5] = function() -- add them to halo drawing
         setHalo( net.ReadEntity(), SPOT_GLOW_TIME )

@@ -103,7 +103,7 @@ local matb = {
 	[TEAM_PROPS] =	 Material("vgui/phehud/res_hp_2")
 }
 
-local SPOT_GLOW_TIME = GetConVar("ph_spot_highlight_time"):GetFloat()
+HUDVariables = HUDVariables or {} -- not sure if cl_spotting.lua runs first
 
 local ICON_START = 168
 local ICON_WIDTH = 48
@@ -118,9 +118,23 @@ local icons = {
 		spotting = {
 			mat		= Material("vgui/phehud/i_spot.png"), -- to replace
 			[false]	= Color(120,120,120,255), 
-			[true]	= Color(255,255,255,255),
-			state   = function() return LocalPlayer():GetNWFloat("PH:Infinity.SpotCooldown", 0) < CurTime() end
-		}
+			[0]		= Color(255,255,255,255),
+			[1]		= Color(0,255,0,255),
+			state   = function()
+				local t = CurTime() - (HUDVariables.SpotSuccess or 0)
+				if t < 2 then -- flash for 2 sec
+					return math.floor( (t*10) % 2 )
+				else
+					return (LocalPlayer():GetNWFloat("PH:Infinity.SpotCooldown", 0) < CurTime()) and 0 or false
+				end
+			end
+		},
+		light = { 
+			mat = Material("vgui/phehud/i_light"), 	
+			[false]	= Color(120,120,120,255), 
+			[true] = Color(255,255,0,255),
+			state = function() return LocalPlayer():FlashlightIsOn() end
+		},
 	},
 	[TEAM_PROPS] = {
 		rotate = { 
@@ -132,8 +146,15 @@ local icons = {
 		spotted = {
 			mat		= Material("vgui/phehud/i_spot.png"), -- to replace
 			[false]	= Color(120,120,120,255), 
-			[true]	= Color(255,100,50,255),
-			state   = function() return (CurTime() - (GLOBAL_LOCAL_LASTSPOTTED or 0) ) < SPOT_GLOW_TIME end
+			[0]		= Color(255,255,255,255),
+			[1]		= Color(255,100,50,255),
+			state   = function()
+				local t = CurTime() - (HUDVariables.LastSpotted or 0)
+				if t < 2 then -- flash for 2 sec
+					return math.floor( (t*10) % 2 )
+				end
+				return false
+			end
 		}
 	}
 }
