@@ -255,13 +255,13 @@ concommand.Add("ph_taunt", ConCommand_SendTaunt, ConCommand_Autocomplete)
 
 ---- concommand for menu ----
 concommand.Add("ph_showtaunts", function()
-	--if LocalPlayer():Alive() && LocalPlayer():GetObserverMode() == OBS_MODE_NONE then
+	if LocalPlayer():Alive() && LocalPlayer():GetObserverMode() == OBS_MODE_NONE then
 		if isopened != true then
 			MainFrame()
 		end
-	--else
-		--chat.AddText("You can only taunt when you're alive.")
-	--end
+	else
+		chat.AddText("You can only taunt when you're alive.")
+	end
 end, nil, "Show Prop Hunt taunt list, so you can select and play for self or play as a taunt.")
 
 ---- run menu concommand on context menu bind ----

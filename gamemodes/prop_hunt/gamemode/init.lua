@@ -746,6 +746,10 @@ function GM:RoundStart()
 end
 -- End of Round Control Override
 
+function GM:IsRoundPlaying()
+	return GetGlobalFloat("RoundEndTime", -1) > CurTime()
+end
+
 -- Player pressed a key
 function PlayerPressedKey(pl, key)
 	-- Use traces to select a prop

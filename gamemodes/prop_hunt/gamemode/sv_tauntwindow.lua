@@ -46,7 +46,7 @@ net.Receive("CL2SV_PlayThisTaunt", function(len, ply)
 	ply:EmitSound(snd, 100)
 	local duration = NewSoundDuration("sound/" .. snd)
 	local points   = math.Round(duration)
-	if ply:Team() == TEAM_PROPS and points > 0 then
+	if ply:Team() == TEAM_PROPS and points > 0 and GAMEMODE:IsRoundPlaying() then
 		ply:PS2_AddStandardPoints(points,"Taunting")
 	end
 	ply:SetNWFloat("NextCanTaunt", CurTime() + duration)
