@@ -31,7 +31,6 @@ CL_GLOBAL_LIGHT_STATE	= 0
 include("cl_tauntloader.lua")
 include("cl_hud_mask.lua")
 include("cl_hud.lua")
-include("cl_menu.lua")
 include("cl_tauntwindow.lua")
 include("cl_targetid.lua")
 include("cl_autotaunt.lua")

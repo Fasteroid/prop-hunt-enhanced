@@ -1,5 +1,4 @@
-
-local hudScreen = nil
+-- GAMEMODE.HudScreen // commented out so it works with autorefresh
 local Alive = false
 local Class = nil
 local Team = 0
@@ -13,7 +12,7 @@ local ObserveTarget = NULL
 local InVote = false
 
 function GM:AddHUDItem( item, pos, parent )
-	hudScreen:AddItem( item, parent, pos )
+	GAMEMODE.HudScreen:AddItem( item, parent, pos )
 end
 
 function GM:HUDNeedsUpdate()
@@ -58,8 +57,8 @@ function GM:RefreshHUD()
 	if ( !GAMEMODE:HUDNeedsUpdate() ) then return end
 	GAMEMODE:OnHUDUpdated()
 	
-	if ( IsValid( hudScreen ) ) then hudScreen:Remove() end
-	hudScreen = vgui.Create( "DHudLayout" )
+	if ( IsValid( GAMEMODE.HudScreen ) ) then GAMEMODE.HudScreen:Remove() end
+	GAMEMODE.HudScreen = vgui.Create( "DHudLayout" )
 	
 	if ( InVote ) then return end
 	
