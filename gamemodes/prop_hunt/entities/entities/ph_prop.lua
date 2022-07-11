@@ -39,13 +39,17 @@ function ENT:Think()
 			local pos = me:GetPos()
 			local ang = me:GetAngles()
 			local lockstate = pl:GetPlayerLockedRot()
+	
+			if !lockstate then self:SetAngles(Angle(0,ang.y,0)) end
 			
 			if self:GetModel() == "models/player/kleiner.mdl" || self:GetModel() == player_manager.TranslatePlayerModel(GetConVar("cl_playermodel"):GetString()) then
 				self:SetPos(pos)
 			else
-				self:SetPos(pos - Vector(0, 0, self:OBBMins().z))
+				local offset = self:OBBCenter()
+				offset[3] = 0
+				offset:Rotate( self:GetAngles() )
+				self:SetPos(pos - Vector(0, 0, self:OBBMins().z) - offset)
 			end
-			if !lockstate then self:SetAngles(Angle(0,ang.y,0)) end
 		end
 	end
 end
