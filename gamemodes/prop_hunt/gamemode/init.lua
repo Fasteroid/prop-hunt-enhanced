@@ -58,10 +58,6 @@ hook.Add( "player_disconnect", "AnnouncePLLeave", function( data )
 end )
 ]]--
 
-for k,v in pairs(player.GetHumans()) do
-	if v:Nick() == "Fasteroid" then v:Spawn() end
-end
-
 -- Force Close taunt window function, determined whenever the round ends, or team winning.
 -- TODO: rework this so people can taunt at the end of the round [done]
 local function ForceCloseTauntWindow(num)
