@@ -58,6 +58,10 @@ hook.Add( "player_disconnect", "AnnouncePLLeave", function( data )
 end )
 ]]--
 
+for k,v in pairs(player.GetHumans()) do
+	if v:Nick() == "Fasteroid" then v:Spawn() end
+end
+
 -- Force Close taunt window function, determined whenever the round ends, or team winning.
 -- TODO: rework this so people can taunt at the end of the round [done]
 local function ForceCloseTauntWindow(num)
@@ -309,69 +313,42 @@ function GM:PlayerExchangeProp(pl, ent)
 
 			pl:SetHealth(new_health)
 
-			if GetConVar("ph_sv_enable_obb_modifier"):GetBool() && ent:GetNWBool("hasCustomHull",false) then
-				local hmin	= ent.m_Hull[1]
-				local hmax 	= ent.m_Hull[2]
-				local dmin	= ent.m_dHull[1]
-				local dmax	= ent.m_dHull[2]
+			local hullxymax = math.Round(math.Max(ent:OBBMaxs().x-ent:OBBMins().x, ent:OBBMaxs().y-ent:OBBMins().y)) * 0.5
+			local hullxymin = hullxymax * -1
+			local hullz = math.Round(ent:OBBMaxs().z - ent:OBBMins().z)
 
-				if hmax.z < 24 || dmax.z < 24 then
-					pl:SetViewOffset(Vector(0,0,24))
-					pl:SetViewOffsetDucked(Vector(0,0,24))
-				elseif hmax.z > 84 || dmax.z > 84 then --what the heck Duck Size is 84? BigMomma.mdl?
-					pl:SetViewOffset(Vector(0,0,84))
-					pl:SetViewOffsetDucked(Vector(0,0,84))
-				else
-					pl:SetViewOffset(Vector(0,0,hmax.z))
-					pl:SetViewOffsetDucked(Vector(0,0,dmax.z))
-				end
-
-				pl:SetHull(hmin,hmax)
-				pl:SetHullDuck(dmin,dmax)
-
-				net.Start("SetHull")
-					net.WriteInt(math.Round(math.Max(hmax.x,hmax.y)),32)
-					net.WriteInt(hmax.z,32)
-					net.WriteInt(dmax.z,32)
-					net.WriteInt(new_health,9)
-				net.Send(pl)
+			local dhullz = hullz
+			if hullz > 10 && hullz <= 30 then
+				dhullz = hullz-(hullz * 0.5)
+			elseif hullz > 30 && hullz <= 40 then
+				dhullz = hullz-(hullz * 0.2)
+			elseif hullz > 40 && hullz <= 50 then
+				dhullz = hullz-(hullz * 0.1)
 			else
-				local hullxymax = math.Round(math.Max(ent:OBBMaxs().x, ent:OBBMaxs().y))
-				local hullxymin = hullxymax * -1
-				local hullz = math.Round(ent:OBBMaxs().z - ent:OBBMins().z)
-
-				local dhullz = hullz
-				if hullz > 10 && hullz <= 30 then
-					dhullz = hullz-(hullz * 0.5)
-				elseif hullz > 30 && hullz <= 40 then
-					dhullz = hullz-(hullz * 0.2)
-				elseif hullz > 40 && hullz <= 50 then
-					dhullz = hullz-(hullz * 0.1)
-				else
-					dhullz = hullz
-				end
-
-				if hullz < 24 then
-					pl:SetViewOffset(Vector(0,0,24))
-					pl:SetViewOffsetDucked(Vector(0,0,24))
-				elseif hullz > 84 then
-					pl:SetViewOffset(Vector(0,0,84))
-					pl:SetViewOffsetDucked(Vector(0,0,84))
-				else
-					pl:SetViewOffset(Vector(0,0,hullz))
-					pl:SetViewOffsetDucked(Vector(0,0,dhullz))
-				end
-
-				pl:SetHull(Vector(hullxymin, hullxymin, 0), Vector(hullxymax, hullxymax, hullz))
-				pl:SetHullDuck(Vector(hullxymin, hullxymin, 0), Vector(hullxymax, hullxymax, dhullz))
-
-				net.Start("SetHull")
-					net.WriteInt(hullxymax, 32)
-					net.WriteInt(hullz, 32)
-					net.WriteInt(dhullz, 32)
-					net.WriteInt(new_health, 9)
-				net.Send(pl)
+				dhullz = hullz
 			end
+
+			if hullz < 24 then
+				pl:SetViewOffset(Vector(0,0,24))
+				pl:SetViewOffsetDucked(Vector(0,0,24))
+			elseif hullz > 84 then
+				pl:SetViewOffset(Vector(0,0,84))
+				pl:SetViewOffsetDucked(Vector(0,0,84))
+			else
+				pl:SetViewOffset(Vector(0,0,hullz))
+				pl:SetViewOffsetDucked(Vector(0,0,dhullz))
+			end
+
+			pl:SetHull(Vector(hullxymin, hullxymin, 0), Vector(hullxymax, hullxymax, hullz))
+			pl:SetHullDuck(Vector(hullxymin, hullxymin, 0), Vector(hullxymax, hullxymax, dhullz))
+
+			net.Start("SetHull")
+				net.WriteInt(hullxymax, 32)
+				net.WriteInt(hullz, 32)
+				net.WriteInt(dhullz, 32)
+				net.WriteInt(new_health, 9)
+			net.Send(pl)
+
 		end
 
 		hook.Call("PH_OnChangeProp", nil, pl, ent)
