@@ -309,9 +309,9 @@ function GM:PlayerExchangeProp(pl, ent)
 
 			pl:SetHealth(new_health)
 
-			local hullxymax = math.Round(math.Max(ent:OBBMaxs().x-ent:OBBMins().x, ent:OBBMaxs().y-ent:OBBMins().y)) * 0.5
+			local hullxymax, hullz = ent:GetPropSize()
+			hullxymax = hullxymax * 0.5
 			local hullxymin = hullxymax * -1
-			local hullz = math.Round(ent:OBBMaxs().z - ent:OBBMins().z)
 
 			local dhullz = hullz
 			if hullz > 10 && hullz <= 30 then
