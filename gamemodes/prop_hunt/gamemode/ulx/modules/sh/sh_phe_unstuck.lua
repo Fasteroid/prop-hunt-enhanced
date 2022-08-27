@@ -4,6 +4,31 @@ local CATEGORY_NAME = "Utility"
 
 if SERVER then -- client doesn't need to see this
 
+    local Player = FindMetaTable("Player")
+    if !Player then return end
+
+    function Player:CheckOBB(maxs,mins)
+        local tr = {}
+        tr.start = self:GetPos()
+        tr.endpos = self:GetPos()
+        tr.filter = {self, self.ph_prop}
+        tr.maxs = maxs
+        tr.mins = mins
+        tr.mask = MASK_PLAYERSOLID
+
+        local trx = util.TraceHull(tr)
+        if trx.Hit then return false end
+        return true
+    end
+
+    function Player:GetHullTrue()
+        if self:Crouching() then
+            return self:GetHullDuck()
+        else
+            return self:GetHull()
+        end
+    end
+
     util.AddNetworkString("PH:Infinity.StuckNotifySound")
     local UNSTUCK_COOLDOWN = 10
 
@@ -25,9 +50,9 @@ if SERVER then -- client doesn't need to see this
 
             local curPos = ply:GetPos()
             local curModel = ply.ph_prop:GetModel()
-
-            local hmx, hz = ply.ph_prop:GetPropSize()
-            local free = ply:CheckHull(hmx, hmx, hz)
+            
+            local mins, maxs = ply:GetHullTrue()
+            local free = ply:CheckOBB(maxs, mins)
 
             if data.isFree and not free then
                 notifyStuck(ply)
@@ -50,8 +75,8 @@ if SERVER then -- client doesn't need to see this
 
             local curPos = ply:GetPos()
 
-            local hmx, hz = ply:GetPropSize() -- lol using this on a hunter
-            local free = ply:CheckHull(hmx, hmx, hz)
+            local mins, maxs = ply:GetHullTrue()
+            local free = ply:CheckOBB(maxs, mins)
 
             if data.isFree and not free then
                 notifyStuck(ply)
@@ -99,6 +124,7 @@ if SERVER then -- client doesn't need to see this
 
         if UnstuckData.isFree then
             ULib.tsayError( calling_ply, "You do not appear to be stuck right now.", true )
+            return
         end
 
         if UnstuckData.nextAllowed > CurTime() then

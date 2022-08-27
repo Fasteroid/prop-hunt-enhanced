@@ -19,6 +19,7 @@ function Player:CheckHull(hx,hy,hz)
 	tr.filter = {self, self.ph_prop}
 	tr.maxs = Vector(hx,hy,hz)
 	tr.mins = Vector(-hx,-hy,0)
+	tr.mask = MASK_PLAYERSOLID
 
 	local trx = util.TraceHull(tr)
 	if trx.Hit then return false end
