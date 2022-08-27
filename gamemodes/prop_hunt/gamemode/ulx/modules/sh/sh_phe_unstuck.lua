@@ -1,0 +1,140 @@
+local CATEGORY_NAME = "Utility"
+
+-- TODO: force an unstuck if all corners of their OBB are inside something
+
+if SERVER then -- client doesn't need to see this
+
+    util.AddNetworkString("PH:Infinity.StuckNotifySound")
+    local UNSTUCK_COOLDOWN = 10
+
+    local function notifyStuck(ply)
+        ULib.tsayError( ply, "You look like you might be stuck.  If you need a hand use !unstuck in chat." ) -- tsayerror is more likely to grab their attention
+        net.Start("PH:Infinity.StuckNotifySound")
+        net.Send(ply)
+    end
+
+    local unstuck_tick_handlers = {
+        [TEAM_PROPS] = function(ply)
+            ply.UnstuckData = ply.UnstuckData or {
+                nextAllowed = 0,
+                isFree = true,
+                lastGoodPosition = Vector(0,0,0),
+                lastGoodModel = "",
+            }
+            local data = ply.UnstuckData
+
+            local curPos = ply:GetPos()
+            local curModel = ply.ph_prop:GetModel()
+
+            local hmx, hz = ply.ph_prop:GetPropSize()
+            local free = ply:CheckHull(hmx, hmx, hz)
+
+            if data.isFree and not free then
+                notifyStuck(ply)
+            end
+
+            if free then
+                data.lastGoodPosition = curPos
+                data.lastGoodModel = curModel
+            end
+
+            data.isFree = free
+        end,
+        [TEAM_HUNTERS] = function(ply) -- they deserve it too!
+            ply.UnstuckData = ply.UnstuckData or {
+                nextAllowed = 0,
+                isFree = true,
+                lastGoodPosition = Vector(0,0,0),
+            }
+            local data = ply.UnstuckData
+
+            local curPos = ply:GetPos()
+
+            local hmx, hz = ply:GetPropSize() -- lol using this on a hunter
+            local free = ply:CheckHull(hmx, hmx, hz)
+
+            if data.isFree and not free then
+                notifyStuck(ply)
+            end
+
+            if free then
+                data.lastGoodPosition = curPos
+            end
+
+            data.isFree = free
+        end
+    }
+
+    local unstuck_action_handlers = {
+        [TEAM_PROPS] = function(ply, data)
+            ply:SetPos( data.lastGoodPosition ) -- force them back to the last good position
+
+            -- Temporarily Spawn a prop. (wolvin's solution from prop chooser)
+            -- TODO: make this less aids
+            local pos = ply:GetPos()
+            local ent = ents.Create("prop_physics")
+            ent:SetPos( Vector(0,0,0) )
+            ent:SetAngles(Angle(0,0,0))
+            ent:SetKeyValue("spawnflags","654")
+            ent:SetNoDraw(true)
+            ent:SetModel(data.lastGoodModel)
+		
+		    ent:Spawn()
+            GAMEMODE:PlayerExchangeProp(ply,ent) -- force them back to the last good model
+            ent:Remove()
+        end,
+        [TEAM_HUNTERS] = function(ply, data)
+            ply:SetPos( data.lastGoodPosition ) -- all we can really do
+        end
+    }
+
+    function ulx.unstuck( calling_ply )
+
+        local UnstuckData = calling_ply.UnstuckData
+
+        if not calling_ply:Alive() then
+            ULib.tsayError( calling_ply, "This does nothing right now, you are dead! (lol)", true )
+            return
+        end
+
+        if UnstuckData.isFree then
+            ULib.tsayError( calling_ply, "You do not appear to be stuck right now.", true )
+        end
+
+        if UnstuckData.nextAllowed > CurTime() then
+            ULib.tsayError( calling_ply, "Unstuck is on cooldown for " .. math.ceil( UnstuckData.nextAllowed - CurTime() ) .. " more seconds.  Stop trying to cheat!", true )
+            return
+        end
+
+        local unstuck = unstuck_action_handlers[ calling_ply:Team() ]
+        if unstuck then 
+            unstuck(calling_ply, UnstuckData) 
+            ULib.tsayColor( calling_ply, true, Color(151,211,255), "There you go, hopefully that helped!" )
+        end
+
+        UnstuckData.nextAllowed = CurTime() + UNSTUCK_COOLDOWN
+        
+    end
+    local unstuck = ulx.command( CATEGORY_NAME, "ulx unstuck", ulx.unstuck, "!unstuck", true )
+    unstuck:defaultAccess( ULib.ACCESS_ALL )
+    unstuck:help( "Attempts to get you unstuck." )
+
+    hook.Add("Think", "PH:Infinity.UnstuckLogic", function()
+        for k, ply in pairs( player.GetHumans() ) do
+
+            if not ply:Alive() then continue end
+            local tick_handler = unstuck_tick_handlers[ ply:Team() ]
+            if not tick_handler then continue end
+
+            tick_handler(ply)
+
+        end
+    end)
+
+end
+
+if CLIENT then
+    net.Receive("PH:Infinity.StuckNotifySound", function()
+        surface.PlaySound("common/warning.wav")
+    end)
+end

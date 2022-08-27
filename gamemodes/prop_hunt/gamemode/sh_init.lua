@@ -25,6 +25,10 @@ include("sh_drive_prop.lua")
 AddCSLuaFile("ulx/modules/sh/sh_phe_mapvote.lua")
 include("ulx/modules/sh/sh_phe_mapvote.lua")
 
+-- ULX Unstuck
+AddCSLuaFile("ulx/modules/sh/sh_phe_unstuck.lua")
+include("ulx/modules/sh/sh_phe_unstuck.lua")
+
 -- Include the required lua files
 AddCSLuaFile("sh_config.lua")
 include("sh_config.lua")
