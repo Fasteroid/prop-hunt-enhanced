@@ -6,7 +6,7 @@ if !Entity then return end
 
 -- Checks player hull to make sure it does not even stuck with the world/other objects.
 function Entity:GetPropSize()
-	local hullxymax = math.Round(math.Max(self:OBBMaxs().x-self:OBBMins().x, self:OBBMaxs().y-self:OBBMins().y))
+	local hullxymax = math.Round(math.Max(self:OBBMaxs().x-self:OBBMins().x, self:OBBMaxs().y-self:OBBMins().y)) * 0.5
 	local hullz = math.Round(self:OBBMaxs().z - self:OBBMins().z)
 
 	return hullxymax,hullz

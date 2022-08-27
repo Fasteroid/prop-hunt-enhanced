@@ -310,7 +310,6 @@ function GM:PlayerExchangeProp(pl, ent)
 			pl:SetHealth(new_health)
 
 			local hullxymax, hullz = ent:GetPropSize()
-			hullxymax = hullxymax * 0.5
 			local hullxymin = hullxymax * -1
 
 			local dhullz = hullz
