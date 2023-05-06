@@ -11,7 +11,8 @@ if SERVER then -- client doesn't need to see this
         local tr = {}
         tr.start = self:GetPos()
         tr.endpos = self:GetPos()
-        tr.filter = {self, self.ph_prop}
+        tr.filter = team.GetPlayers( self:Team() )
+        if self.ph_prop then table.insert(tr.filter, self.ph_prop) end
         tr.maxs = maxs
         tr.mins = mins
         tr.mask = MASK_PLAYERSOLID
