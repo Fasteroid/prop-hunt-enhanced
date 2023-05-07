@@ -11,8 +11,7 @@ if SERVER then -- client doesn't need to see this
         local tr = {}
         tr.start = self:GetPos()
         tr.endpos = self:GetPos()
-        tr.filter = team.GetPlayers( self:Team() )
-        if self.ph_prop then table.insert(tr.filter, self.ph_prop) end
+        tr.filter = {self, self.ph_prop}
         tr.maxs = maxs
         tr.mins = mins
         tr.mask = MASK_PLAYERSOLID
@@ -32,11 +31,29 @@ if SERVER then -- client doesn't need to see this
 
     util.AddNetworkString("PH:Infinity.StuckNotifySound")
     local UNSTUCK_COOLDOWN = 10
+    local UNSTUCK_HELPER_TIME = 1
 
     local function notifyStuck(ply)
-        ULib.tsayError( ply, "You look like you might be stuck.  If you need a hand use !unstuck in chat." ) -- tsayerror is more likely to grab their attention
-        net.Start("PH:Infinity.StuckNotifySound")
-        net.Send(ply)
+
+        local data = ply.UnstuckData
+        data.lastNotify = CurTime() + UNSTUCK_HELPER_TIME
+        data.speedTick  = 0
+        data.velTotal   = Vector(0,0,0)
+
+        hook.Add("Think", "unstuck_"..ply:Nick(), function() -- determine it over the next second
+            data.speedTick = data.speedTick + 1
+            data.velTotal  = data.velTotal + ply:GetVelocity()
+            if data.lastNotify < CurTime() then
+                local mins, maxs = ply:GetHullTrue()
+                if( data.velTotal:Length() / data.speedTick < 50 and not ply:CheckOBB(maxs, mins) ) then
+                    ULib.tsayError( ply, "You look like you might be stuck.  If you need a hand use !unstuck in chat." ) -- tsayerror is more likely to grab their attention
+                    net.Start("PH:Infinity.StuckNotifySound")
+                    net.Send(ply)
+                end
+                hook.Remove("Think", "unstuck_"..ply:Nick())
+            end
+        end)
+
     end
 
     local unstuck_tick_handlers = {
