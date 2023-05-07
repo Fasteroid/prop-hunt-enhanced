@@ -18,9 +18,6 @@ include("sh_language.lua")
 AddCSLuaFile("config/sh_init.lua")
 include("config/sh_init.lua")
 
-AddCSLuaFile("sh_drive_prop.lua")
-include("sh_drive_prop.lua")
-
 -- ULX Mapvote
 AddCSLuaFile("ulx/modules/sh/sh_phe_mapvote.lua")
 include("ulx/modules/sh/sh_phe_mapvote.lua")
