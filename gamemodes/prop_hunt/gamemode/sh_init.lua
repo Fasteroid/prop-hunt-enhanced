@@ -1,5 +1,5 @@
 -- Initialize the shared variable
-PHE = {}
+PHE = PHE or {}
 PHE.__index = PHE
 
 -- set these important enums ASAP

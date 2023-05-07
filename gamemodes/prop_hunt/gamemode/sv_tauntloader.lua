@@ -1,7 +1,6 @@
 -- Global Var for custom taunt, delivering from taunts/prop -or- hunter_taunts.lua
 util.AddNetworkString("PH_TauntRequest")
 
-
 local function CompileTaunts()
 
     PHE.TAUNTS = {}
@@ -40,10 +39,11 @@ local function CompileTaunts()
 
 end
 
-CompileTaunts()
+hook.Add("Initialize", "PHE.AddTauntTables", CompileTaunts)
 
 -- this really should be in a shared file but I'm lazy
 function PHE:GetAllTeamTaunt(teamid)
+
 	if teamid == TEAM_PROPS then
 		local taunt = table.Copy(PHE.TAUNTS.PROPS)
 		return taunt
