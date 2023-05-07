@@ -31,27 +31,31 @@ if SERVER then -- client doesn't need to see this
 
     util.AddNetworkString("PH:Infinity.StuckNotifySound")
     local UNSTUCK_COOLDOWN = 10
-    local UNSTUCK_HELPER_TIME = 1
+    local UNSTUCK_OBSERVE_TICKS = 1 / engine.TickInterval()
 
     local function notifyStuck(ply)
 
         local data = ply.UnstuckData
-        data.lastNotify = CurTime() + UNSTUCK_HELPER_TIME
         data.speedTick  = 0
         data.velTotal   = Vector(0,0,0)
 
-        hook.Add("Think", "unstuck_"..ply:Nick(), function() -- determine it over the next second
+        local timername = ply:SteamID64().."_unstuck"
+
+        timer.Create(timername, 0, UNSTUCK_OBSERVE_TICKS, function() -- determine it over the next second\
+            if not IsValid(ply) then timer.Remove(timername) end
+
             data.speedTick = data.speedTick + 1
             data.velTotal  = data.velTotal + ply:GetVelocity()
-            if data.lastNotify < CurTime() then
+
+            if data.speedTick >= UNSTUCK_OBSERVE_TICKS then
                 local mins, maxs = ply:GetHullTrue()
                 if( data.velTotal:Length() / data.speedTick < 50 and not ply:CheckOBB(maxs, mins) ) then
                     ULib.tsayError( ply, "You look like you might be stuck.  If you need a hand use !unstuck in chat." ) -- tsayerror is more likely to grab their attention
                     net.Start("PH:Infinity.StuckNotifySound")
                     net.Send(ply)
                 end
-                hook.Remove("Think", "unstuck_"..ply:Nick())
             end
+
         end)
 
     end
