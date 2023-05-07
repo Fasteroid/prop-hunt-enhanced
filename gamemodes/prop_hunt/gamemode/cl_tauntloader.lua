@@ -1,6 +1,8 @@
+PHE.TAUNTS = PHE.TAUNTS or {}
+
 local function requestTaunts()
     net.Start("PH_TauntRequest")
-    net.SendToServer()
+    	net.SendToServer()
 	print("Requesting taunts...")
 end
 
@@ -18,11 +20,8 @@ hook.Add( "InitPostEntity", "PHRequestTaunts", function() -- this was breaking f
     requestTaunts()
 end )
 
-requestTaunts()
-
-PHE.TAUNTS = {}
-
 net.Receive("PH_TauntRequest",function()
+	PHE.TAUNTS = {}
     local length = net.ReadUInt(16)
     local data = util.JSONToTable( util.Decompress( net.ReadData(length) ) )
     PHE.TAUNTS.HUNTERS = data.h

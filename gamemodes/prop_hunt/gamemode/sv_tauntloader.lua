@@ -1,9 +1,8 @@
 -- Global Var for custom taunt, delivering from taunts/prop -or- hunter_taunts.lua
 util.AddNetworkString("PH_TauntRequest")
 
-PHE.TAUNTS = {}
 
-local function AddDemTaunt()
+local function CompileTaunts()
 
     PHE.TAUNTS = {}
     PHE.TAUNTS.PROPS = {}
@@ -40,8 +39,8 @@ local function AddDemTaunt()
 	}))
 
 end
-AddDemTaunt()
-hook.Add("Initialize", "PHE.AddTauntTables", AddDemTaunt)
+
+hook.Add("Initialize", "PHE.AddTauntTables", CompileTaunts)
 
 -- this really should be in a shared file but I'm lazy
 function PHE:GetAllTeamTaunt(teamid)
@@ -58,12 +57,12 @@ function PHE:GetAllTeamTaunt(teamid)
 end
 
 net.Receive("PH_TauntRequest", function(size,sender)
-    -- if not sender.HasTaunts then -- antispam
+    if not sender.HasTaunts then -- antispam
         sender.HasTaunts = true 
         print(sender:Nick() .. " requested Taunts.")
         net.Start("PH_TauntRequest")
 			net.WriteUInt(#PHE.TAUNTS.COMPRESSED,16)
             net.WriteData(PHE.TAUNTS.COMPRESSED)
         net.Send(sender)
-    -- end
+    end
 end)
