@@ -11,50 +11,58 @@ ENT.Spawnable = true
 ENT.AdminOnly = false
 ENT.RenderGroup = RENDERGROUP_BOTH
 
+local function UpdatePropTransforms(ply, prop, pos, angle)
+	if not IsValid(ply) or not ply:Alive() then return end
+	
+	if not ply:GetPlayerLockedRot() then prop:SetAngles(Angle(0,angle.y,0)) end
+	if prop:GetModel() == "models/player/kleiner.mdl" then
+		prop:SetPos(pos)
+	else
+		local offset = prop:OBBCenter()
+		offset[3] = 0
+		offset:Rotate( prop:GetAngles() )
+		prop:SetPos(pos - Vector(0, 0, prop:OBBMins().z) - offset)
+	end	
+end
+
 function ENT:SetupDataTables() end
 
-function ENT:Initialize()
-	if SERVER then
+if CLIENT then
+
+	function ENT:Draw()
+		self:DrawModel()
+	end
+
+	function ENT:Think()
+		local pl = self:GetOwner()
+		if pl == LocalPlayer() then
+			local me  = LocalPlayer()
+			UpdatePropTransforms(pl, self, me:GetPos(), me:GetAngles())
+		end
+	end
+
+end
+
+if SERVER then
+
+	function ENT:Initialize()
 		self:SetModel("models/player/kleiner.mdl")
 		self:SetLagCompensated(true)			
 		self:SetMoveType(MOVETYPE_NONE)
 		self.health = 100
-	else
-	
 	end
-end
 
-if CLIENT then
-	function ENT:Draw()
-		self:DrawModel()
-	end
-end
-	
--- Prop Movement and Rotation (CLIENT)
-function ENT:Think()
-	if CLIENT then
-		local pl = self:GetOwner()
-		if IsValid(pl) && pl:Alive() && pl == LocalPlayer() then
-			local me  = LocalPlayer()
-			local pos = me:GetPos()
-			local ang = me:GetAngles()
-			local lockstate = pl:GetPlayerLockedRot()
-	
-			if !lockstate then self:SetAngles(Angle(0,ang.y,0)) end
-			
-			if self:GetModel() == "models/player/kleiner.mdl" || self:GetModel() == player_manager.TranslatePlayerModel(GetConVar("cl_playermodel"):GetString()) then
-				self:SetPos(pos)
-			else
-				local offset = self:OBBCenter()
-				offset[3] = 0
-				offset:Rotate( self:GetAngles() )
-				self:SetPos(pos - Vector(0, 0, self:OBBMins().z) - offset)
+	-- sh_drive_prop.lua
+	hook.Add("Move", "moveProp", function(ply, move)
+		if ply:Team() == TEAM_PROPS then
+
+			local ent = ply.ph_prop
+			if IsValid(ent) then
+				UpdatePropTransforms(ply, ent, move:GetOrigin(), move:GetAngles())
 			end
-		end
-	end
-end
 
-if SERVER then
+		end
+	end)
 	
 	-- Transmit update
 	function ENT:UpdateTransmitState()
