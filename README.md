@@ -7,8 +7,8 @@
 _Prop Hunt: Infinity_ is a further improved version of _Wolvin's Prop Hunt: Enhanced_.<br>
 The main change is to the taunt menu, which now supports essentially infinite taunts with less hassle than the original.
 
-This fork is hosted on my server, _Props Beyond Infinity_, available at the IP below:<br>
-`76.111.171.96:27016`
+This fork is hosted on my server, *Props Beyond Infinity*, available at the domain below:<br>
+`infinityservers.net`
 
 ### Donate
 
