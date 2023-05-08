@@ -26,7 +26,7 @@ local function AutoTauntThink()
 
                 ply:EmitSound("taunts/" .. rand_taunt, 100)
                 ply:SetNW2Float("LastTauntTime", CurTime())
-                ply:ChatPrint("You auto-taunted " .. name)
+                ply:ChatPrint("You auto-taunted " .. name .. " (" .. ran_taunt .. ")")
             end
         end
     end
