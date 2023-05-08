@@ -1,5 +1,4 @@
+local Help = nil
 
-local Help = nil 
 function GM:ShowHelp()
-	
 end

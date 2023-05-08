@@ -1,6 +1,5 @@
 -- Ship
 resource.AddWorkshop("1754658833")
-
 -- Send required file to clients
 AddCSLuaFile("sh_init.lua")
 AddCSLuaFile("sh_player.lua")
@@ -13,7 +12,6 @@ AddCSLuaFile("cl_targetid.lua")
 AddCSLuaFile("cl_autotaunt.lua")
 AddCSLuaFile("cl_credits.lua")
 AddCSLuaFile("cl_spotting.lua")
-
 -- Include the required lua files
 include("sv_networkfunctions.lua")
 include("sh_init.lua")
@@ -23,22 +21,15 @@ include("sv_admin.lua")
 include("sv_autotaunt.lua")
 include("sv_tauntwindow.lua")
 include("sv_spotting.lua")
-
 include("sv_bbox_addition.lua")
 
 -- Server only constants
-PHE.EXPLOITABLE_DOORS = {
-	"func_door",
-	"prop_door_rotating",
-	"func_door_rotating"
-}
+PHE.EXPLOITABLE_DOORS = {"func_door", "prop_door_rotating", "func_door_rotating"}
 
 -- Voice Control Constant init
 PHE.VOICE_IS_END_ROUND = 0
-
 -- Update cvar to variables changes every so seconds
 PHE.UPDATE_CVAR_TO_VARIABLE = 0
-
 -- Spectator check
 PHE.SPECTATOR_CHECK = 0
 
@@ -56,345 +47,309 @@ hook.Add( "player_disconnect", "AnnouncePLLeave", function( data )
 		v:PrintMessage( HUD_PRINTTALK, data.name .. " has left the server (Reason: " .. data.reason .. ")" )
 	end
 end )
-]]--
-
+]]
+--
 -- Force Close taunt window function, determined whenever the round ends, or team winning.
 -- TODO: rework this so people can taunt at the end of the round [done]
 local function ForceCloseTauntWindow(num)
-	if num == 1 then
-		net.Start("PH_ForceCloseTauntWindow")
-		net.Broadcast()
-	elseif num == 0 then
-		net.Start("PH_AllowTauntWindow")
-		net.Broadcast()
-	end
+    if num == 1 then
+        net.Start("PH_ForceCloseTauntWindow")
+        net.Broadcast()
+    elseif num == 0 then
+        net.Start("PH_AllowTauntWindow")
+        net.Broadcast()
+    end
 end
 
 -- Called alot
 function GM:CheckPlayerDeathRoundEnd()
-	if !GAMEMODE.RoundBased || !GAMEMODE:InRound() then
-		return
-	end
+    if not GAMEMODE.RoundBased or not GAMEMODE:InRound() then return end
+    local Teams = GAMEMODE:GetTeamAliveCounts()
 
-	local Teams = GAMEMODE:GetTeamAliveCounts()
+    if table.Count(Teams) == 0 then
+        GAMEMODE:RoundEndWithResult(1001, PHE.LANG.HUD.DRAW)
+        PHE.VOICE_IS_END_ROUND = 1
+        ForceCloseTauntWindow(1)
+        net.Start("PH_RoundDraw_Snd")
+        net.Broadcast()
+        hook.Call("PH_OnRoundDraw", nil)
 
-	if table.Count(Teams) == 0 then
-		GAMEMODE:RoundEndWithResult(1001, PHE.LANG.HUD.DRAW)
-		PHE.VOICE_IS_END_ROUND = 1
-		ForceCloseTauntWindow(1)
+        return
+    end
 
-		net.Start("PH_RoundDraw_Snd")
-		net.Broadcast()
+    if table.Count(Teams) == 1 then
+        local TeamID = table.GetFirstKey(Teams)
+        -- debug
+        MsgAll("Round Result: " .. team.GetName(TeamID) .. " (" .. TeamID .. ") Wins!\n")
+        -- End Round
+        GAMEMODE:RoundEndWithResult(TeamID, string.format(PHE.LANG.HUD.WIN, team.GetName(TeamID)))
+        PHE.VOICE_IS_END_ROUND = 1
+        ForceCloseTauntWindow(1)
 
-		hook.Call("PH_OnRoundDraw", nil)
-		return
-	end
+        -- send the win notification
+        if TeamID == TEAM_HUNTERS then
+            net.Start("PH_TeamWinning_Snd")
+            net.WriteString(PHE.WINNINGSOUNDS[TEAM_HUNTERS])
+            net.Broadcast()
+        elseif TeamID == TEAM_PROPS then
+            net.Start("PH_TeamWinning_Snd")
+            net.WriteString(PHE.WINNINGSOUNDS[TEAM_PROPS])
+            net.Broadcast()
+        end
 
-	if table.Count(Teams) == 1 then
-		local TeamID = table.GetFirstKey (Teams)
-		-- debug
-		MsgAll("Round Result: " .. team.GetName(TeamID) .. " (" .. TeamID .. ") Wins!\n")
-		-- End Round
-		GAMEMODE:RoundEndWithResult(TeamID, string.format(PHE.LANG.HUD.WIN, team.GetName(TeamID)))
-		PHE.VOICE_IS_END_ROUND = 1
-		ForceCloseTauntWindow(1)
+        hook.Call("PH_OnRoundWinTeam", nil, TeamID)
 
-		-- send the win notification
-		if TeamID == TEAM_HUNTERS then
-			net.Start("PH_TeamWinning_Snd")
-			net.WriteString(PHE.WINNINGSOUNDS[TEAM_HUNTERS])
-			net.Broadcast()
-		elseif TeamID == TEAM_PROPS then
-			net.Start("PH_TeamWinning_Snd")
-			net.WriteString(PHE.WINNINGSOUNDS[TEAM_PROPS])
-			net.Broadcast()
-		end
-
-		hook.Call("PH_OnRoundWinTeam", nil, TeamID)
-		return
-	end
+        return
+    end
 end
 
 -- Player Voice & Chat Control to prevent Metagaming. (As requested by some server owners/suggestors.)
 -- You can disable this feature by typing 'sv_alltalk 1' in console to make everyone can hear.
-
 -- Control Player Voice
 function GM:PlayerCanHearPlayersVoice(listen, speaker)
-
-	local alltalk_cvar = GetConVar("sv_alltalk"):GetInt()
-	if (alltalk_cvar > 0) then return true, false end
-
-	-- prevent Loopback check.
-	if (listen == speaker) then return false, false end
-
-	-- Only alive players can listen other living players.
-	if listen:Alive() && speaker:Alive() then return true, false end
-
-	-- Event: On Round Start. Living Players don't listen to dead players.
-	if PHE.VOICE_IS_END_ROUND == 0 && listen:Alive() && !speaker:Alive() then return false, false end
-
-	-- Listen to all dead players while you dead.
-	if !listen:Alive() && !speaker:Alive() then return true, false end
-
-	-- However, Living players can be heard from dead players.
-	if !listen:Alive() && speaker:Alive() then return true, false end
-
-	-- Event: On Round End/Time End. Listen to everyone.
-	if PHE.VOICE_IS_END_ROUND == 1 && listen:Alive() && !speaker:Alive() then return true, false end
-
-	-- Spectator can only read from themselves.
-	if listen:Team() == TEAM_SPECTATOR && listen:Alive() && speaker:Alive() then return false, false end
-
-	-- This is for ULX "Permanent Gag". Uncomment this if you have some issues.
-	-- if speaker:GetPData( "permgagged" ) == "true" then return false, false end
-
-	-- does return true, true required here?
+    local alltalk_cvar = GetConVar("sv_alltalk"):GetInt()
+    if alltalk_cvar > 0 then return true, false end
+    -- prevent Loopback check.
+    if listen == speaker then return false, false end
+    -- Only alive players can listen other living players.
+    if listen:Alive() and speaker:Alive() then return true, false end
+    -- Event: On Round Start. Living Players don't listen to dead players.
+    if PHE.VOICE_IS_END_ROUND == 0 and listen:Alive() and not speaker:Alive() then return false, false end
+    -- Listen to all dead players while you dead.
+    if not listen:Alive() and not speaker:Alive() then return true, false end
+    -- However, Living players can be heard from dead players.
+    if not listen:Alive() and speaker:Alive() then return true, false end
+    -- Event: On Round End/Time End. Listen to everyone.
+    if PHE.VOICE_IS_END_ROUND == 1 and listen:Alive() and not speaker:Alive() then return true, false end
+    -- Spectator can only read from themselves.
+    if listen:Team() == TEAM_SPECTATOR and listen:Alive() and speaker:Alive() then return false, false end
+    -- This is for ULX "Permanent Gag". Uncomment this if you have some issues.
+    -- if speaker:GetPData( "permgagged" ) == "true" then return false, false end
+    -- does return true, true required here?
 end
 
 -- Control Players Chat
 function GM:PlayerCanSeePlayersChat(txt, onteam, listen, speaker)
+    if onteam then
+        -- Generic Specific OnTeam chats
+        if not IsValid(speaker) or not IsValid(listen) then return false end
+        if listen:Team() ~= speaker:Team() then return false end
+        -- ditto, this is same as below.
+        if listen:Alive() and speaker:Alive() then return true end
+        if PHE.VOICE_IS_END_ROUND == 0 and listen:Alive() and not speaker:Alive() then return false end
+        if not listen:Alive() and not speaker:Alive() then return true end
+        if not listen:Alive() and speaker:Alive() then return true end
+        if PHE.VOICE_IS_END_ROUND == 1 and listen:Alive() and not speaker:Alive() then return true end
+        if listen:Team() == TEAM_SPECTATOR and listen:Alive() and speaker:Alive() then return false end
+    end
 
-	if ( onteam ) then
-		-- Generic Specific OnTeam chats
-		if ( !IsValid( speaker ) || !IsValid( listen ) ) then return false end
-		if ( listen:Team() != speaker:Team() ) then return false end
+    local alltalk_cvar = GetConVar("sv_alltalk"):GetInt()
+    if alltalk_cvar > 0 then return true end
+    -- Generic Checks
+    if not IsValid(speaker) or not IsValid(listen) then return false end
+    -- Only alive players can see other living players.
+    if listen:Alive() and speaker:Alive() then return true end
+    -- Event: On Round Start. Living Players don't see dead players' chat.
+    if PHE.VOICE_IS_END_ROUND == 0 and listen:Alive() and not speaker:Alive() then return false end
+    -- See Chat to all dead players while you dead.
+    if not listen:Alive() and not speaker:Alive() then return true end
+    -- However, Living players' chat can be seen from dead players.
+    if not listen:Alive() and speaker:Alive() then return true end
+    -- Event: On Round End/Time End. See Chat to everyone.
+    if PHE.VOICE_IS_END_ROUND == 1 and listen:Alive() and not speaker:Alive() then return true end
+    -- Spectator can only read from themselves.
+    if listen:Team() == TEAM_SPECTATOR and listen:Alive() and speaker:Alive() then return false end
 
-		-- ditto, this is same as below.
-		if listen:Alive() && speaker:Alive() then return true end
-		if PHE.VOICE_IS_END_ROUND == 0 && listen:Alive() && !speaker:Alive() then return false end
-		if !listen:Alive() && !speaker:Alive() then return true end
-		if !listen:Alive() && speaker:Alive() then return true end
-		if PHE.VOICE_IS_END_ROUND == 1 && listen:Alive() && !speaker:Alive() then return true end
-		if listen:Team() == TEAM_SPECTATOR && listen:Alive() && speaker:Alive() then return false end
-	end
-
-	local alltalk_cvar = GetConVar("sv_alltalk"):GetInt()
-	if (alltalk_cvar > 0) then return true end
-
-	-- Generic Checks
-	if ( !IsValid( speaker ) || !IsValid( listen ) ) then return false end
-
-	-- Only alive players can see other living players.
-	if listen:Alive() && speaker:Alive() then return true end
-
-	-- Event: On Round Start. Living Players don't see dead players' chat.
-	if PHE.VOICE_IS_END_ROUND == 0 && listen:Alive() && !speaker:Alive() then return false end
-
-	-- See Chat to all dead players while you dead.
-	if !listen:Alive() && !speaker:Alive() then return true end
-
-	-- However, Living players' chat can be seen from dead players.
-	if !listen:Alive() && speaker:Alive() then return true end
-
-	-- Event: On Round End/Time End. See Chat to everyone.
-	if PHE.VOICE_IS_END_ROUND == 1 && listen:Alive() && !speaker:Alive() then return true end
-
-	-- Spectator can only read from themselves.
-	if listen:Team() == TEAM_SPECTATOR && listen:Alive() && speaker:Alive() then return false end
-
-	return true
+    return true
 end
 
 -- Called when an entity takes damage
 function EntityTakeDamage(ent, dmginfo)
-	local att = dmginfo:GetAttacker()
+    local att = dmginfo:GetAttacker()
 
-	-- Code from: https://facepunch.com/showthread.php?t=1500179 , Special thanks from AlcoholicoDrogadicto(http://steamcommunity.com/profiles/76561198082241865/) for suggesting this.
-	if GAMEMODE:InRound() && ent && ent:IsPlayer() && ent:Alive() && ent:Team() == TEAM_PROPS && ent.ph_prop then
-		-- Prevent Prop 'Friendly Fire'
-		if ( dmginfo:GetAttacker():IsPlayer() && dmginfo:GetAttacker():Team() == ent:Team() )
-			then printVerbose("DMGINFO::ATTACKED!!-> " .. tostring(dmginfo:GetAttacker()) .. ", DMGTYPE: " .. dmginfo:GetDamageType())
-			return
-		end
-		--Debug purpose.
-		printVerbose("!! " .. ent:Name() .. "'s PLAYER entity appears to have taken damage, we can redirect it to the prop! (Model is: " .. ent.ph_prop:GetModel() .. ")")
-		ent.ph_prop:TakeDamageInfo(dmginfo)
-		return
-	end
+    -- Code from: https://facepunch.com/showthread.php?t=1500179 , Special thanks from AlcoholicoDrogadicto(http://steamcommunity.com/profiles/76561198082241865/) for suggesting this.
+    if GAMEMODE:InRound() and ent and ent:IsPlayer() and ent:Alive() and ent:Team() == TEAM_PROPS and ent.ph_prop then
+        -- Prevent Prop 'Friendly Fire'
+        if dmginfo:GetAttacker():IsPlayer() and dmginfo:GetAttacker():Team() == ent:Team() then
+            printVerbose("DMGINFO::ATTACKED!!-> " .. tostring(dmginfo:GetAttacker()) .. ", DMGTYPE: " .. dmginfo:GetDamageType())
 
-	if GAMEMODE:InRound() && ent && (ent:GetClass() != "ph_prop" && ent:GetClass() != "func_breakable" && ent:GetClass() != "prop_door_rotating" && ent:GetClass() != "prop_dynamic*") && !ent:IsPlayer() && att && att:IsPlayer() && att:Team() == TEAM_HUNTERS && att:Alive() then
-		if att:Armor() >= 5 && GetConVar("ph_hunter_fire_penalty"):GetInt() >= 5 then
-			att:SetHealth(att:Health() - (math.Round(GetConVar("ph_hunter_fire_penalty"):GetInt() / 2)))
-			att:SetArmor(att:Armor() - 15)
-			if att:Armor() < 0 then att:SetArmor(0) end
-		else
-			att:SetHealth(att:Health() - GetConVar("ph_hunter_fire_penalty"):GetInt())
-		end
-		if att:Health() <= 0 then
-			MsgAll(att:Name() .. " felt guilty for hurting so many innocent props and committed suicide\n")
-			att:Kill()
+            return
+        end
 
-			hook.Call("PH_HunterDeathPenalty", nil, att)
-		end
-	end
+        --Debug purpose.
+        printVerbose("!! " .. ent:Name() .. "'s PLAYER entity appears to have taken damage, we can redirect it to the prop! (Model is: " .. ent.ph_prop:GetModel() .. ")")
+        ent.ph_prop:TakeDamageInfo(dmginfo)
+
+        return
+    end
+
+    if GAMEMODE:InRound() and ent and ent:GetClass() ~= "ph_prop" and ent:GetClass() ~= "func_breakable" and ent:GetClass() ~= "prop_door_rotating" and ent:GetClass() ~= "prop_dynamic*" and not ent:IsPlayer() and att and att:IsPlayer() and att:Team() == TEAM_HUNTERS and att:Alive() then
+        if att:Armor() >= 5 and GetConVar("ph_hunter_fire_penalty"):GetInt() >= 5 then
+            att:SetHealth(att:Health() - math.Round(GetConVar("ph_hunter_fire_penalty"):GetInt() / 2))
+            att:SetArmor(att:Armor() - 15)
+
+            if att:Armor() < 0 then
+                att:SetArmor(0)
+            end
+        else
+            att:SetHealth(att:Health() - GetConVar("ph_hunter_fire_penalty"):GetInt())
+        end
+
+        if att:Health() <= 0 then
+            MsgAll(att:Name() .. " felt guilty for hurting so many innocent props and committed suicide\n")
+            att:Kill()
+            hook.Call("PH_HunterDeathPenalty", nil, att)
+        end
+    end
 end
+
 hook.Add("EntityTakeDamage", "PH_EntityTakeDamage", EntityTakeDamage)
 
 -- Called when player tries to pickup a weapon
 function GM:PlayerCanPickupWeapon(pl, ent)
-	if pl:Team() != TEAM_HUNTERS then
-		return false
-	end
-	return true
+    if pl:Team() ~= TEAM_HUNTERS then return false end
+
+    return true
 end
 
 function PH_ResetCustomTauntWindowState()
-	-- Force close any taunt menu windows
-	ForceCloseTauntWindow(0)
-	-- Extra additional
-	PHE.VOICE_IS_END_ROUND = 0
-	-- Reset Player's Height
+    -- Force close any taunt menu windows
+    ForceCloseTauntWindow(0)
+    -- Extra additional
+    PHE.VOICE_IS_END_ROUND = 0
+    -- Reset Player's Height
 end
+
 hook.Add("PostCleanupMap", "PH_ResetCustomTauntWindow", PH_ResetCustomTauntWindowState)
 
 -- Make a variable for 4 unique combines.
 -- Clean up, sorry btw.
-local playerModels = {
-	"combine",
-	"combineprison",
-	"combineelite",
-	"police"
-	-- you may add more here.
-}
+local playerModels = {"combine", "combineprison", "combineelite", "police"}
 
+-- you may add more here.
 function GM:PlayerSetModel(pl)
+    -- player actual model to prevent multi-damage hitbox.
+    local player_model = "models/props_idbs/phenhanced/box.mdl"
 
-	-- player actual model to prevent multi-damage hitbox.
-	local player_model = "models/props_idbs/phenhanced/box.mdl"
+    if GetConVar("ph_use_custom_plmodel"):GetBool() then
+        -- Use a delivered player model info from cl_playermodel ConVar.
+        -- This however will use a custom player selection. It'll immediately apply once it is selected.
+        local mdlinfo = pl:GetInfo("cl_playermodel")
+        local mdlname = player_manager.TranslatePlayerModel(mdlinfo)
 
-	if GetConVar("ph_use_custom_plmodel"):GetBool() then
-		-- Use a delivered player model info from cl_playermodel ConVar.
-		-- This however will use a custom player selection. It'll immediately apply once it is selected.
-		local mdlinfo = pl:GetInfo("cl_playermodel")
-		local mdlname = player_manager.TranslatePlayerModel(mdlinfo)
+        if pl:Team() == TEAM_HUNTERS then
+            player_model = mdlname
+        end
+    else
+        -- Otherwise, Use Random one based from a table above.
+        local customModel = table.Random(playerModels)
+        local customMdlName = player_manager.TranslatePlayerModel(customModel)
 
-		if pl:Team() == TEAM_HUNTERS then
-			player_model = mdlname
-		end
-	else
-		-- Otherwise, Use Random one based from a table above.
-		local customModel = table.Random(playerModels)
-		local customMdlName = player_manager.TranslatePlayerModel(customModel)
+        if pl:Team() == TEAM_HUNTERS then
+            player_model = customMdlName
+        end
+    end
 
-		if pl:Team() == TEAM_HUNTERS then
-			player_model = customMdlName
-		end
-	end
-
-	-- precache and Set the model.
-	util.PrecacheModel(player_model)
-	pl:SetModel(player_model)
+    -- precache and Set the model.
+    util.PrecacheModel(player_model)
+    pl:SetModel(player_model)
 end
 
 -- The [E] & Mouse Click 1 behaviour is now moved in here!
 function GM:PlayerExchangeProp(pl, ent)
+    if not IsValid(pl) then return end
+    if not IsValid(ent) then return end
 
-	if !IsValid(pl) then return; end
-	if !IsValid(ent) then return; end
+    if pl:Team() == TEAM_PROPS and table.HasValue(PHE.USABLE_PROP_ENTITIES, ent:GetClass()) and ent:GetModel() then
+        if table.HasValue(PHE.BANNED_PROP_MODELS, ent:GetModel()) then
+            pl:ChatPrint("[PH: Enhanced] Notice: That prop has been banned from the server.")
+        elseif IsValid(ent:GetPhysicsObject()) and IsValid(pl.ph_prop) and (pl.ph_prop:GetModel() ~= ent:GetModel() or pl.ph_prop:GetSkin() ~= ent:GetSkin()) then
+            local ent_health = math.Clamp(ent:GetPhysicsObject():GetVolume() / 250, 1, 200)
+            local new_health = math.Clamp(pl.ph_prop.health / pl.ph_prop.max_health * ent_health, 1, 200)
+            pl.ph_prop.health = new_health
+            pl.ph_prop.max_health = ent_health
+            pl.ph_prop:SetModel(ent:GetModel())
+            pl.ph_prop:SetSkin(ent:GetSkin())
+            pl.ph_prop:SetSolid(SOLID_VPHYSICS)
+            pl.ph_prop:SetPos(pl:GetPos() - Vector(0, 0, ent:OBBMins().z))
+            pl.ph_prop:SetAngles(pl:GetAngles())
+            pl:SetHealth(new_health)
+            local hullxymax, hullz = ent:GetPropSize()
+            local hullxymin = hullxymax * -1
+            local dhullz = hullz
 
-	if pl:Team() == TEAM_PROPS && table.HasValue(PHE.USABLE_PROP_ENTITIES, ent:GetClass()) && ent:GetModel() then
-		if table.HasValue(PHE.BANNED_PROP_MODELS, ent:GetModel()) then
-			pl:ChatPrint("[PH: Enhanced] Notice: That prop has been banned from the server.")
-		elseif IsValid(ent:GetPhysicsObject()) && IsValid (pl.ph_prop) && (pl.ph_prop:GetModel() != ent:GetModel() || pl.ph_prop:GetSkin() != ent:GetSkin()) then
-			local ent_health = math.Clamp(ent:GetPhysicsObject():GetVolume() / 250, 1, 200)
-			local new_health = math.Clamp((pl.ph_prop.health / pl.ph_prop.max_health) * ent_health, 1, 200)
-			pl.ph_prop.health = new_health
+            if hullz > 10 and hullz <= 30 then
+                dhullz = hullz - hullz * 0.5
+            elseif hullz > 30 and hullz <= 40 then
+                dhullz = hullz - hullz * 0.2
+            elseif hullz > 40 and hullz <= 50 then
+                dhullz = hullz - hullz * 0.1
+            else
+                dhullz = hullz
+            end
 
-			pl.ph_prop.max_health = ent_health
-			pl.ph_prop:SetModel(ent:GetModel())
-			pl.ph_prop:SetSkin(ent:GetSkin())
-			pl.ph_prop:SetSolid(SOLID_VPHYSICS)
-			pl.ph_prop:SetPos(pl:GetPos() - Vector(0, 0, ent:OBBMins().z))
-			pl.ph_prop:SetAngles(pl:GetAngles())
+            if hullz < 24 then
+                pl:SetViewOffset(Vector(0, 0, 24))
+                pl:SetViewOffsetDucked(Vector(0, 0, 24))
+            elseif hullz > 84 then
+                pl:SetViewOffset(Vector(0, 0, 84))
+                pl:SetViewOffsetDucked(Vector(0, 0, 84))
+            else
+                pl:SetViewOffset(Vector(0, 0, hullz))
+                pl:SetViewOffsetDucked(Vector(0, 0, dhullz))
+            end
 
-			pl:SetHealth(new_health)
+            pl:SetHull(Vector(hullxymin, hullxymin, 0), Vector(hullxymax, hullxymax, hullz))
+            pl:SetHullDuck(Vector(hullxymin, hullxymin, 0), Vector(hullxymax, hullxymax, dhullz))
+            net.Start("SetHull")
+            net.WriteInt(hullxymax, 32)
+            net.WriteInt(hullz, 32)
+            net.WriteInt(dhullz, 32)
+            net.WriteInt(new_health, 9)
+            net.Send(pl)
+        end
 
-			local hullxymax, hullz = ent:GetPropSize()
-			local hullxymin = hullxymax * -1
-
-			local dhullz = hullz
-			if hullz > 10 && hullz <= 30 then
-				dhullz = hullz-(hullz * 0.5)
-			elseif hullz > 30 && hullz <= 40 then
-				dhullz = hullz-(hullz * 0.2)
-			elseif hullz > 40 && hullz <= 50 then
-				dhullz = hullz-(hullz * 0.1)
-			else
-				dhullz = hullz
-			end
-
-			if hullz < 24 then
-				pl:SetViewOffset(Vector(0,0,24))
-				pl:SetViewOffsetDucked(Vector(0,0,24))
-			elseif hullz > 84 then
-				pl:SetViewOffset(Vector(0,0,84))
-				pl:SetViewOffsetDucked(Vector(0,0,84))
-			else
-				pl:SetViewOffset(Vector(0,0,hullz))
-				pl:SetViewOffsetDucked(Vector(0,0,dhullz))
-			end
-
-			pl:SetHull(Vector(hullxymin, hullxymin, 0), Vector(hullxymax, hullxymax, hullz))
-			pl:SetHullDuck(Vector(hullxymin, hullxymin, 0), Vector(hullxymax, hullxymax, dhullz))
-
-			net.Start("SetHull")
-				net.WriteInt(hullxymax, 32)
-				net.WriteInt(hullz, 32)
-				net.WriteInt(dhullz, 32)
-				net.WriteInt(new_health, 9)
-			net.Send(pl)
-
-		end
-
-		hook.Call("PH_OnChangeProp", nil, pl, ent)
-	end
+        hook.Call("PH_OnChangeProp", nil, pl, ent)
+    end
 end
 
 function GM:PlayerUse(pl, ent)
-	if !pl:Alive() || pl:Team() == TEAM_SPECTATOR || pl:Team() == TEAM_UNASSIGNED then return false; end
+    if not pl:Alive() or pl:Team() == TEAM_SPECTATOR or pl:Team() == TEAM_UNASSIGNED then return false end
 
-	-- Prevent Execution Spam by holding ['E'] button too long.
-	if pl.UseTime <= CurTime() then
+    -- Prevent Execution Spam by holding ['E'] button too long.
+    if pl.UseTime <= CurTime() then
+        local hmx, hz = ent:GetPropSize()
 
-		local hmx, hz = ent:GetPropSize()
-		if pl:Team() == TEAM_PROPS && GetConVar("phe_check_props_boundaries"):GetBool() && !pl:CheckHull(hmx, hmx, hz) then
-			pl:SendLua("chat.AddText(Color(235, 10, 15), \"[PH: Enhanced]\", Color(220, 220, 220), \" There is no room to change that prop!\")")
-		else
-			self:PlayerExchangeProp(pl, ent)
-		end
+        if pl:Team() == TEAM_PROPS and GetConVar("phe_check_props_boundaries"):GetBool() and not pl:CheckHull(hmx, hmx, hz) then
+            pl:SendLua("chat.AddText(Color(235, 10, 15), \"[PH: Enhanced]\", Color(220, 220, 220), \" There is no room to change that prop!\")")
+        else
+            self:PlayerExchangeProp(pl, ent)
+        end
 
+        pl.UseTime = CurTime() + 1
+    end
 
-		pl.UseTime = CurTime() + 1
+    -- Allow pickup?
+    if IsValid(ent) and (ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer") and (GetConVar("ph_allow_prop_pickup"):GetInt() <= 0 or GetConVar("ph_allow_prop_pickup"):GetInt() == 2 and pl:Team() ~= TEAM_HUNTERS) then return false end
+    -- Prevent the door exploit
+    if table.HasValue(PHE.EXPLOITABLE_DOORS, ent:GetClass()) and pl.last_door_time and pl.last_door_time + 1 > CurTime() then return false end
+    pl.last_door_time = CurTime()
 
-	end
-
-	-- Allow pickup?
-	if IsValid(ent) && (ent:GetClass() == "prop_physics" || ent:GetClass() == "prop_physics_multiplayer") && (GetConVar("ph_allow_prop_pickup"):GetInt() <= 0 || (GetConVar("ph_allow_prop_pickup"):GetInt() == 2 && pl:Team() != TEAM_HUNTERS)) then
-		return false
-	end
-
-	-- Prevent the door exploit
-	if table.HasValue(PHE.EXPLOITABLE_DOORS, ent:GetClass()) && pl.last_door_time && pl.last_door_time + 1 > CurTime() then
-		return false
-	end
-
-
-	pl.last_door_time = CurTime()
-
-	return true
+    return true
 end
 
 net.Receive("CL2SV_ExchangeProp", function(len, ply)
-	ply:PrintMessage(HUD_PRINTCONSOLE, "-=* NOTICE *=-")
-	ply:PrintMessage(HUD_PRINTCONSOLE, "Hello! We've noticed you tried using the \"CL2SV_ExchangeProp\" net message.")
-	ply:PrintMessage(HUD_PRINTCONSOLE, "Sad news is that this net message is no longer used (due to exploits). Shame, isn't it?")
-	ply:PrintMessage(HUD_PRINTCONSOLE, "")
-	ply:PrintMessage(HUD_PRINTCONSOLE, "This net message will still respond, but you will receive this message instead.")
-	ply:PrintMessage(HUD_PRINTCONSOLE, "-=* NOTICE *=-")
+    ply:PrintMessage(HUD_PRINTCONSOLE, "-=* NOTICE *=-")
+    ply:PrintMessage(HUD_PRINTCONSOLE, "Hello! We've noticed you tried using the \"CL2SV_ExchangeProp\" net message.")
+    ply:PrintMessage(HUD_PRINTCONSOLE, "Sad news is that this net message is no longer used (due to exploits). Shame, isn't it?")
+    ply:PrintMessage(HUD_PRINTCONSOLE, "")
+    ply:PrintMessage(HUD_PRINTCONSOLE, "This net message will still respond, but you will receive this message instead.")
+    ply:PrintMessage(HUD_PRINTCONSOLE, "-=* NOTICE *=-")
+end)
 
-	--[[
+--[[
 	if ply.UseTime <= CurTime() then
-	
+
 		if !ply:IsHoldingEntity() then
 			local hmx,hz = Prop:GetPropSize()
 			if (GetConVar("phe_check_props_boundaries"):GetBool() && !ply:CheckHull(hmx,hmx,hz)) then
@@ -403,377 +358,374 @@ net.Receive("CL2SV_ExchangeProp", function(len, ply)
 				GAMEMODE:PlayerExchangeProp(ply, Prop)
 			end
 		end
-		
+
 		ply.UseTime = CurTime() + 1
-		
+
 	end
 	]]
-
-	-- OBSOLETE : THIS IS COMMENTED OUT BECAUSE THIS METHOD IS SILLY AND SHOULD NOT BE USED. --yeah kind of my fault! >.<
-end)
-
+-- OBSOLETE : THIS IS COMMENTED OUT BECAUSE THIS METHOD IS SILLY AND SHOULD NOT BE USED. --yeah kind of my fault! >.<
 function DoPlayerTaunt(pl)
-	if (GetConVar("ph_enable_custom_taunts"):GetInt() == 1) && GAMEMODE:InRound() then
-		pl:ConCommand("ph_showtaunts")
-	end
+    if GetConVar("ph_enable_custom_taunts"):GetInt() == 1 and GAMEMODE:InRound() then
+        pl:ConCommand("ph_showtaunts")
+    end
 
-	if ((GetConVar("ph_enable_custom_taunts"):GetInt() == 0) || (GetConVar("ph_enable_custom_taunts"):GetInt() == 2)) && GAMEMODE:InRound() && pl:Alive() && (pl:Team() == TEAM_HUNTERS || pl:Team() == TEAM_PROPS) && pl.last_taunt_time + GetConVar("ph_normal_taunt_delay"):GetInt() <= CurTime() && (table.Count(PHE.PROP_TAUNTS) > 1 && table.Count(PHE.HUNTER_TAUNTS) > 1) then
-		local curTeamTaunt = {
-			hunter 	= PHE:GetAllTeamTaunt(TEAM_HUNTERS),
-			prop 	= PHE:GetAllTeamTaunt(TEAM_PROPS)
-		}
+    if (GetConVar("ph_enable_custom_taunts"):GetInt() == 0 or GetConVar("ph_enable_custom_taunts"):GetInt() == 2) and GAMEMODE:InRound() and pl:Alive() and (pl:Team() == TEAM_HUNTERS or pl:Team() == TEAM_PROPS) and pl.last_taunt_time + GetConVar("ph_normal_taunt_delay"):GetInt() <= CurTime() and table.Count(PHE.PROP_TAUNTS) > 1 and table.Count(PHE.HUNTER_TAUNTS) > 1 then
+        local curTeamTaunt = {
+            hunter = PHE:GetAllTeamTaunt(TEAM_HUNTERS),
+            prop = PHE:GetAllTeamTaunt(TEAM_PROPS)
+        }
 
-		-- play the taunts based on listed curCustTaunt available.
+        -- play the taunts based on listed curCustTaunt available.
+        if pl:Team() == TEAM_HUNTERS then
+            rand_taunt = table.Random(curTeamTaunt.hunter)
+        else
+            rand_taunt = table.Random(curTeamTaunt.prop)
+        end
 
-		if pl:Team() == TEAM_HUNTERS then
-			rand_taunt = table.Random(curTeamTaunt.hunter)
-		else
-			rand_taunt = table.Random(curTeamTaunt.prop)
-		end
-
-
-		pl.last_taunt_time = CurTime() + GetConVar("ph_normal_taunt_delay"):GetInt()
-		pl.last_taunt = rand_taunt
-
-		pl:EmitSound(rand_taunt, 100)
-		pl:SetNWFloat("LastTauntTime", CurTime())
-	end
+        pl.last_taunt_time = CurTime() + GetConVar("ph_normal_taunt_delay"):GetInt()
+        pl.last_taunt = rand_taunt
+        pl:EmitSound(rand_taunt, 100)
+        pl:SetNWFloat("LastTauntTime", CurTime())
+    end
 end
 
 -- Called when player presses any button
-function GM:PlayerButtonDown (pl, button)
+function GM:PlayerButtonDown(pl, button)
 end
 
 -- Called when a player leaves
 function PlayerDisconnected(pl)
-	pl:RemoveProp()
+    pl:RemoveProp()
 end
+
 hook.Add("PlayerDisconnected", "PH_PlayerDisconnected", PlayerDisconnected)
 
 -- Set specific variable for checking in player initial spawn, then use Player:IsHoldingEntity()
 hook.Add("PlayerInitialSpawn", "PHE.SetupInitData", function(ply)
-	ply.LastPickupEnt = NULL
-	ply.UseTime = 0
+    ply.LastPickupEnt = NULL
+    ply.UseTime = 0
 end)
-hook.Add("AllowPlayerPickup", "PHE.IsHoldingEntity", function(ply,ent)
-	ply.LastPickupEnt = ent
-	ent.LastPickupPly = ply
+
+hook.Add("AllowPlayerPickup", "PHE.IsHoldingEntity", function(ply, ent)
+    ply.LastPickupEnt = ent
+    ent.LastPickupPly = ply
 end)
 
 -- Spray Controls
-hook.Add( "PlayerSpray", "PH.GeneralSprayFunc", function( ply )
-	if ( ( !ply:Alive() ) || ( ply:Team() == TEAM_SPECTATOR ) ) then
-		return true
-	end
-end )
+hook.Add("PlayerSpray", "PH.GeneralSprayFunc", function(ply)
+    if not ply:Alive() or ply:Team() == TEAM_SPECTATOR then return true end
+end)
 
 -- Called when the players spawns
 function PlayerSpawn(pl)
-	pl:SetNWBool("PlayerLockedRotation", false)
-	pl:SetNWBool("InFreezeCam", false)
-	pl:SetNWEntity("PlayerKilledByPlayerEntity", nil)
-	pl:Blind(false)
-	pl:RemoveProp()
-	pl:SetColor(Color(255,255,255,255))
-	pl:SetRenderMode(RENDERMODE_TRANSALPHA)
-	pl:UnLock()
-	pl:ResetHull()
-	pl:SetNWFloat("LastTauntTime", CurTime())
-	pl.last_taunt_time = 0
+    pl:SetNWBool("PlayerLockedRotation", false)
+    pl:SetNWBool("InFreezeCam", false)
+    pl:SetNWEntity("PlayerKilledByPlayerEntity", nil)
+    pl:Blind(false)
+    pl:RemoveProp()
+    pl:SetColor(Color(255, 255, 255, 255))
+    pl:SetRenderMode(RENDERMODE_TRANSALPHA)
+    pl:UnLock()
+    pl:ResetHull()
+    pl:SetNWFloat("LastTauntTime", CurTime())
+    pl.last_taunt_time = 0
+    net.Start("ResetHull")
+    net.Send(pl)
+    net.Start("DisableDynamicLight")
+    net.Send(pl)
+    pl:SetCollisionGroup(COLLISION_GROUP_PASSABLE_DOOR)
+    pl:CollisionRulesChanged()
 
-	net.Start("ResetHull")
-	net.Send(pl)
+    if pl:Team() == TEAM_HUNTERS then
+        pl:SetJumpPower(160)
+    elseif pl:Team() == TEAM_PROPS then
+        pl:SetJumpPower(160 * GetConVar("ph_prop_jumppower"):GetFloat())
+    end
 
-	net.Start("DisableDynamicLight")
-	net.Send(pl)
-
-	pl:SetCollisionGroup(COLLISION_GROUP_PASSABLE_DOOR)
-	pl:CollisionRulesChanged()
-
-	if pl:Team() == TEAM_HUNTERS then
-		pl:SetJumpPower(160)
-	elseif pl:Team() == TEAM_PROPS then
-		pl:SetJumpPower(160 * GetConVar("ph_prop_jumppower"):GetFloat())
-	end
-
-	-- Listen server host
-	if !game.IsDedicated() then
-		pl:SetNWBool("ListenServerHost", pl:IsListenServerHost())
-	end
+    -- Listen server host
+    if not game.IsDedicated() then
+        pl:SetNWBool("ListenServerHost", pl:IsListenServerHost())
+    end
 end
-hook.Add("PlayerSpawn", "PH_PlayerSpawn", PlayerSpawn)
 
+hook.Add("PlayerSpawn", "PH_PlayerSpawn", PlayerSpawn)
 
 -- Called when round ends
 function RoundEnd()
-	-- Unblind the hunters
-	for _, pl in pairs(team.GetPlayers(TEAM_HUNTERS)) do
-		pl:Blind(false)
-		pl:UnLock()
-	end
+    -- Unblind the hunters
+    for _, pl in pairs(team.GetPlayers(TEAM_HUNTERS)) do
+        pl:Blind(false)
+        pl:UnLock()
+    end
 
-	-- Stop autotaunting
-	net.Start("AutoTauntRoundEnd")
-	net.Broadcast()
+    -- Stop autotaunting
+    net.Start("AutoTauntRoundEnd")
+    net.Broadcast()
 end
-hook.Add("PH_RoundEnd", "PH.ForceHuntersUnblind", RoundEnd)
 
+hook.Add("PH_RoundEnd", "PH.ForceHuntersUnblind", RoundEnd)
 
 -- This is called when the round time ends (props win)
 function GM:RoundTimerEnd()
-	if !GAMEMODE:InRound() then
-		return
-	end
-
-	GAMEMODE:RoundEndWithResult(TEAM_PROPS, string.format(PHE.LANG.HUD.WIN, "Props"))
-	PHE.VOICE_IS_END_ROUND = 1
-	ForceCloseTauntWindow(1)
-
-	net.Start("PH_TeamWinning_Snd")
-	net.WriteString(PHE.WINNINGSOUNDS[TEAM_PROPS])
-	net.Broadcast()
-
-	hook.Call("PH_OnTimerEnd", nil)
+    if not GAMEMODE:InRound() then return end
+    GAMEMODE:RoundEndWithResult(TEAM_PROPS, string.format(PHE.LANG.HUD.WIN, "Props"))
+    PHE.VOICE_IS_END_ROUND = 1
+    ForceCloseTauntWindow(1)
+    net.Start("PH_TeamWinning_Snd")
+    net.WriteString(PHE.WINNINGSOUNDS[TEAM_PROPS])
+    net.Broadcast()
+    hook.Call("PH_OnTimerEnd", nil)
 end
-
 
 -- Called before start of round
 function GM:OnPreRoundStart(num)
-	game.CleanUpMap()
+    game.CleanUpMap()
 
-	if GetGlobalInt("RoundNumber") != 1 && (GetConVar("ph_swap_teams_every_round"):GetInt() == 1 || ((team.GetScore(TEAM_PROPS) + team.GetScore(TEAM_HUNTERS)) > 0)) then
-		for _, pl in pairs(player.GetAll()) do
-			if pl:Team() == TEAM_PROPS || pl:Team() == TEAM_HUNTERS then
-				if pl:Team() == TEAM_PROPS then
-					pl:SetTeam(TEAM_HUNTERS)
-				else
-					pl:SetTeam(TEAM_PROPS)
-					if GetConVar("ph_notice_prop_rotation"):GetBool() then
-						timer.Simple(0.5, function() pl:SendLua( [[notification.AddLegacy("You are in Prop Team with Rotate support! You can rotate the prop around by moving your mouse.", NOTIFY_UNDO, 20 )]] ) end)
-						pl:SendLua( [[notification.AddLegacy("Additionally you can toggle lock rotation by pressing R key!", NOTIFY_GENERIC, 18 )]] )
-						pl:SendLua( [[surface.PlaySound("garrysmod/content_downloaded.wav")]] )
-					end
-				end
+    if GetGlobalInt("RoundNumber") ~= 1 and (GetConVar("ph_swap_teams_every_round"):GetInt() == 1 or team.GetScore(TEAM_PROPS) + team.GetScore(TEAM_HUNTERS) > 0) then
+        for _, pl in pairs(player.GetAll()) do
+            if pl:Team() == TEAM_PROPS or pl:Team() == TEAM_HUNTERS then
+                if pl:Team() == TEAM_PROPS then
+                    pl:SetTeam(TEAM_HUNTERS)
+                else
+                    pl:SetTeam(TEAM_PROPS)
 
-			pl:ChatPrint(PHE.LANG.CHAT.SWAP)
-			end
-		end
+                    if GetConVar("ph_notice_prop_rotation"):GetBool() then
+                        timer.Simple(0.5, function()
+                            pl:SendLua([[notification.AddLegacy("You are in Prop Team with Rotate support! You can rotate the prop around by moving your mouse.", NOTIFY_UNDO, 20 )]])
+                        end)
 
-		-- Props will gain a Bonus Armor points Hunter teams has more than 4 players in it. The more player, the more armor they get.
-		timer.Simple(1, function()
-			local NumHunter = table.Count(team.GetPlayers(TEAM_HUNTERS))
-			if NumHunter >= 4 && NumHunter <= 8 then
-				for _,prop in pairs(team.GetPlayers(TEAM_PROPS)) do
-					if IsValid(prop) then prop:SetArmor(math.random(1,3) * 15) end
-				end
-			elseif NumHunter > 8 then
-				for _,prop in pairs(team.GetPlayers(TEAM_PROPS)) do
-					if IsValid(prop) then prop:SetArmor(math.random(3,7) * 15) end
-				end
-			end
-		end)
+                        pl:SendLua([[notification.AddLegacy("Additionally you can toggle lock rotation by pressing R key!", NOTIFY_GENERIC, 18 )]])
+                        pl:SendLua([[surface.PlaySound("garrysmod/content_downloaded.wav")]])
+                    end
+                end
 
-		hook.Call("PH_OnPreRoundStart", nil, GetConVar("ph_swap_teams_every_round"):GetInt())
-	end
+                pl:ChatPrint(PHE.LANG.CHAT.SWAP)
+            end
+        end
 
-	-- Balance teams?
-	if GetConVar("ph_autoteambalance"):GetBool() then
-		GAMEMODE:CheckTeamBalance()
-	end
+        -- Props will gain a Bonus Armor points Hunter teams has more than 4 players in it. The more player, the more armor they get.
+        timer.Simple(1, function()
+            local NumHunter = table.Count(team.GetPlayers(TEAM_HUNTERS))
 
-	UTIL_StripAllPlayers()
-	UTIL_SpawnAllPlayers()
-	UTIL_FreezeAllPlayers()
+            if NumHunter >= 4 and NumHunter <= 8 then
+                for _, prop in pairs(team.GetPlayers(TEAM_PROPS)) do
+                    if IsValid(prop) then
+                        prop:SetArmor(math.random(1, 3) * 15)
+                    end
+                end
+            elseif NumHunter > 8 then
+                for _, prop in pairs(team.GetPlayers(TEAM_PROPS)) do
+                    if IsValid(prop) then
+                        prop:SetArmor(math.random(3, 7) * 15)
+                    end
+                end
+            end
+        end)
+
+        hook.Call("PH_OnPreRoundStart", nil, GetConVar("ph_swap_teams_every_round"):GetInt())
+    end
+
+    -- Balance teams?
+    if GetConVar("ph_autoteambalance"):GetBool() then
+        GAMEMODE:CheckTeamBalance()
+    end
+
+    UTIL_StripAllPlayers()
+    UTIL_SpawnAllPlayers()
+    UTIL_FreezeAllPlayers()
 end
 
-
 -- Called every server tick.
-function GM:Think()	-- Prop spectating is a bit messy so let us clean it up a bit
-	if PHE.SPECTATOR_CHECK < CurTime() then
-		for _, pl in pairs(team.GetPlayers(TEAM_PROPS)) do
-			if IsValid(pl) && !pl:Alive() && pl:GetObserverMode() == OBS_MODE_IN_EYE then
-				hook.Call("ChangeObserverMode", GAMEMODE, pl, OBS_MODE_ROAMING)
-			end
-		end
-		PHE.SPECTATOR_CHECK = CurTime() + PHE.SPECTATOR_CHECK_ADD
-	end
+-- Prop spectating is a bit messy so let us clean it up a bit
+function GM:Think()
+    if PHE.SPECTATOR_CHECK < CurTime() then
+        for _, pl in pairs(team.GetPlayers(TEAM_PROPS)) do
+            if IsValid(pl) and not pl:Alive() and pl:GetObserverMode() == OBS_MODE_IN_EYE then
+                hook.Call("ChangeObserverMode", GAMEMODE, pl, OBS_MODE_ROAMING)
+            end
+        end
+
+        PHE.SPECTATOR_CHECK = CurTime() + PHE.SPECTATOR_CHECK_ADD
+    end
 end
 
 -- Bonus Drop :D
 function PH_Props_OnBreak(ply, ent)
-	if GetConVar("ph_enable_lucky_balls"):GetBool() then
-		local pos = ent:GetPos()
-		if math.random() < 0.08 then -- 8% Chance of drops.
-			local dropent = ents.Create("ph_luckyball")
-			dropent:SetPos(Vector(pos.x, pos.y, pos.z + 32)) -- to make sure the Lucky Ball didn't fall underground.
-			dropent:SetAngles(Angle(0,0,0))
-			dropent:SetColor(Color(math.Round(math.random(0,255)),math.Round(math.random(0,255)),math.Round(math.random(0,255)),255))
-			dropent:Spawn()
-		end
-	end
+    if GetConVar("ph_enable_lucky_balls"):GetBool() then
+        local pos = ent:GetPos()
+
+        -- 8% Chance of drops.
+        if math.random() < 0.08 then
+            local dropent = ents.Create("ph_luckyball")
+            dropent:SetPos(Vector(pos.x, pos.y, pos.z + 32)) -- to make sure the Lucky Ball didn't fall underground.
+            dropent:SetAngles(Angle(0, 0, 0))
+            dropent:SetColor(Color(math.Round(math.random(0, 255)), math.Round(math.random(0, 255)), math.Round(math.random(0, 255)), 255))
+            dropent:Spawn()
+        end
+    end
 end
+
 hook.Add("PropBreak", "Props_OnBreak_WithDrops", PH_Props_OnBreak)
 
 -- Force Close the Taunt Menu whenever the prop is being killed.
 function close_PlayerKilledSilently(ply)
-	if ply:Team() == TEAM_PROPS then
-		net.Start( "PH_ForceCloseTauntWindow" )
-		net.Send(ply)
-	end
+    if ply:Team() == TEAM_PROPS then
+        net.Start("PH_ForceCloseTauntWindow")
+        net.Send(ply)
+    end
 end
+
 hook.Add("PlayerSilentDeath", "SilentDed_ForceClose", close_PlayerKilledSilently)
 
 -- Flashlight toggling
 function GM:PlayerSwitchFlashlight(pl, on)
-	if pl:Alive() && pl:Team() == TEAM_HUNTERS then
-		return true
-	end
+    if pl:Alive() and pl:Team() == TEAM_HUNTERS then return true end
 
-	if pl:Alive() && pl:Team() == TEAM_PROPS then
-		net.Start("PlayerSwitchDynamicLight")
-		net.Send(pl)
-	end
+    if pl:Alive() and pl:Team() == TEAM_PROPS then
+        net.Start("PlayerSwitchDynamicLight")
+        net.Send(pl)
+    end
 
-	return false
+    return false
 end
 
 -- Round Control
 cvars.AddChangeCallback("ph_min_waitforplayers", function(cvar, old, new)
-	if tonumber(new) < 1 then
-		RunConsoleCommand("ph_min_waitforplayers", "1")
-		print("[PH:E] Warning: Value must not be 0! Use ph_waitforplayers 0 to disable.")
-	end
+    if tonumber(new) < 1 then
+        RunConsoleCommand("ph_min_waitforplayers", "1")
+        print("[PH:E] Warning: Value must not be 0! Use ph_waitforplayers 0 to disable.")
+    end
 end)
 
 local bAlreadyStarted = false
-function GM:OnRoundEnd( num )
-	-- Check if GetConVar("ph_waitforplayers"):GetBool() is true
-	-- This is a fast implementation for a waiting system
-	-- Make optimisations if needed
-	if ( GetConVar("ph_waitforplayers"):GetBool() ) then
-		-- Take away a round number quickly before it adds another when there are not enough players
-		-- Set to false
-		if ( ( team.NumPlayers( TEAM_HUNTERS ) < GetConVar("ph_min_waitforplayers"):GetInt() ) || ( team.NumPlayers( TEAM_PROPS ) < GetConVar("ph_min_waitforplayers"):GetInt() ) ) then
-			bAlreadyStarted = false
-		end
 
-		-- Set to true
-		if ( ( team.NumPlayers( TEAM_HUNTERS ) >= GetConVar("ph_min_waitforplayers"):GetInt() ) && ( team.NumPlayers( TEAM_PROPS ) >= GetConVar("ph_min_waitforplayers"):GetInt() ) ) then
-			bAlreadyStarted = true
-		end
+function GM:OnRoundEnd(num)
+    -- Check if GetConVar("ph_waitforplayers"):GetBool() is true
+    -- This is a fast implementation for a waiting system
+    -- Make optimisations if needed
+    if GetConVar("ph_waitforplayers"):GetBool() then
+        -- Take away a round number quickly before it adds another when there are not enough players
+        -- Set to false
+        if team.NumPlayers(TEAM_HUNTERS) < GetConVar("ph_min_waitforplayers"):GetInt() or team.NumPlayers(TEAM_PROPS) < GetConVar("ph_min_waitforplayers"):GetInt() then
+            bAlreadyStarted = false
+        end
 
-		-- Check if the round was already started before so we count it as a fully played round
-		if ( !bAlreadyStarted ) then
-			SetGlobalInt( "RoundNumber", GetGlobalInt("RoundNumber") - 1 )
-		end
-	end
+        -- Set to true
+        if team.NumPlayers(TEAM_HUNTERS) >= GetConVar("ph_min_waitforplayers"):GetInt() and team.NumPlayers(TEAM_PROPS) >= GetConVar("ph_min_waitforplayers"):GetInt() then
+            bAlreadyStarted = true
+        end
 
-	hook.Call("PH_OnRoundEnd", nil, num)
+        -- Check if the round was already started before so we count it as a fully played round
+        if not bAlreadyStarted then
+            SetGlobalInt("RoundNumber", GetGlobalInt("RoundNumber") - 1)
+        end
+    end
 
+    hook.Call("PH_OnRoundEnd", nil, num)
 end
 
 function GM:RoundStart()
+    local roundNum = GetGlobalInt("RoundNumber")
+    local roundDuration = GAMEMODE:GetRoundTime(roundNum)
+    GAMEMODE:OnRoundStart(roundNum)
 
-	local roundNum = GetGlobalInt( "RoundNumber" );
-	local roundDuration = GAMEMODE:GetRoundTime( roundNum )
+    timer.Create("RoundEndTimer", roundDuration, 0, function()
+        GAMEMODE:RoundTimerEnd()
+    end)
 
-	GAMEMODE:OnRoundStart( roundNum )
+    timer.Create("CheckRoundEnd", 1, 0, function()
+        GAMEMODE:CheckRoundEnd()
+    end)
 
-	timer.Create( "RoundEndTimer", roundDuration, 0, function() GAMEMODE:RoundTimerEnd() end )
-	timer.Create( "CheckRoundEnd", 1, 0, function() GAMEMODE:CheckRoundEnd() end )
+    SetGlobalFloat("RoundEndTime", CurTime() + roundDuration)
 
-	SetGlobalFloat( "RoundEndTime", CurTime() + roundDuration );
+    -- Check if GetConVar("ph_waitforplayers"):GetBool() is true
+    -- This is a fast implementation for a waiting system
+    -- Make optimisations if needed
+    if GetConVar("ph_waitforplayers"):GetBool() then
+        -- Pause these timers if there are not enough players on the teams in the server
+        if team.NumPlayers(TEAM_HUNTERS) < GetConVar("ph_min_waitforplayers"):GetInt() or team.NumPlayers(TEAM_PROPS) < GetConVar("ph_min_waitforplayers"):GetInt() then
+            if timer.Exists("RoundEndTimer") and timer.Exists("CheckRoundEnd") then
+                timer.Pause("RoundEndTimer")
+                timer.Pause("CheckRoundEnd")
+                SetGlobalFloat("RoundEndTime", -1)
+                PrintMessage(HUD_PRINTTALK, PHE.LANG.CHAT.NOTENOUGHPLYS)
+                -- Reset the team score
+                team.SetScore(TEAM_PROPS, 0)
+                team.SetScore(TEAM_HUNTERS, 0)
+            end
+        end
+    end
 
-	-- Check if GetConVar("ph_waitforplayers"):GetBool() is true
-	-- This is a fast implementation for a waiting system
-	-- Make optimisations if needed
-	if ( GetConVar("ph_waitforplayers"):GetBool() ) then
-
-		-- Pause these timers if there are not enough players on the teams in the server
-		if ( ( team.NumPlayers( TEAM_HUNTERS ) < GetConVar("ph_min_waitforplayers"):GetInt() ) || ( team.NumPlayers( TEAM_PROPS ) < GetConVar("ph_min_waitforplayers"):GetInt() ) ) then
-
-			if ( timer.Exists( "RoundEndTimer" ) && timer.Exists( "CheckRoundEnd" ) ) then
-
-				timer.Pause( "RoundEndTimer" )
-				timer.Pause( "CheckRoundEnd" )
-
-				SetGlobalFloat( "RoundEndTime", -1 );
-
-				PrintMessage( HUD_PRINTTALK, PHE.LANG.CHAT.NOTENOUGHPLYS )
-				-- Reset the team score
-				team.SetScore(TEAM_PROPS, 0)
-				team.SetScore(TEAM_HUNTERS, 0)
-			end
-
-		end
-
-	end
-
-	-- Send this as a global boolean
-	SetGlobalBool( "RoundWaitForPlayers", GetConVar("ph_waitforplayers"):GetBool() )
-
-	hook.Call("PH_RoundStart", nil)
-
+    -- Send this as a global boolean
+    SetGlobalBool("RoundWaitForPlayers", GetConVar("ph_waitforplayers"):GetBool())
+    hook.Call("PH_RoundStart", nil)
 end
--- End of Round Control Override
 
+-- End of Round Control Override
 function GM:IsRoundPlaying()
-	return GetGlobalFloat("RoundEndTime", -1) > CurTime()
+    return GetGlobalFloat("RoundEndTime", -1) > CurTime()
 end
 
 -- Player pressed a key
 function PlayerPressedKey(pl, key)
-	-- Use traces to select a prop
-	local _,max = pl:GetHull()
-	if pl && pl:IsValid() && pl:Alive() && pl:Team() == TEAM_PROPS then
-		plhullz = max.z
+    -- Use traces to select a prop
+    local _, max = pl:GetHull()
 
-		if key == IN_ATTACK then
-			local trace = {}
-			if plhullz < 24 then
-				trace.start = pl:EyePos() + Vector(0, 0, plhullz + (24-  plhullz))
-				trace.endpos = pl:EyePos() + Vector(0, 0, plhullz + (24 - plhullz)) + pl:EyeAngles():Forward() * 100
-			elseif plhullz > 84 then
-				trace.start = pl:EyePos() + Vector(0, 0, plhullz - 84)
-				trace.endpos = pl:EyePos() + Vector(0, 0, plhullz - 84) + pl:EyeAngles():Forward() * 300
-			else
-				trace.start = pl:EyePos() + Vector(0, 0, 8)
-				trace.endpos = pl:EyePos() + Vector(0, 0, 8) + pl:EyeAngles():Forward() * 100
-			end
-			trace.filter = ents.FindByClass("ph_prop")
+    if pl and pl:IsValid() and pl:Alive() and pl:Team() == TEAM_PROPS then
+        plhullz = max.z
 
-			local trace2 = util.TraceLine(trace)
-			if trace2.Entity && trace2.Entity:IsValid() && table.HasValue(PHE.USABLE_PROP_ENTITIES, trace2.Entity:GetClass()) then
-				if pl.UseTime <= CurTime() then
-					if !pl:IsHoldingEntity() then
-						local hmx, hz = trace2.Entity:GetPropSize()
-						if GetConVar("phe_check_props_boundaries"):GetBool() && !pl:CheckHull(hmx, hmx, hz) then
-							pl:SendLua("chat.AddText(Color(235, 10, 15), \"[PH: Enhanced]\", Color(220, 220, 220), \" There is no room to change that prop!\")")
-						else
-							GAMEMODE:PlayerExchangeProp(pl, trace2.Entity)
-						end
-					end
-					pl.UseTime = CurTime() + 1
-				end
-			end
-		end
+        if key == IN_ATTACK then
+            local trace = {}
 
-		if key == IN_ATTACK2 then
-			DoPlayerTaunt (pl)
-		end
-	end
+            if plhullz < 24 then
+                trace.start = pl:EyePos() + Vector(0, 0, plhullz + 24 - plhullz)
+                trace.endpos = pl:EyePos() + Vector(0, 0, plhullz + 24 - plhullz) + pl:EyeAngles():Forward() * 100
+            elseif plhullz > 84 then
+                trace.start = pl:EyePos() + Vector(0, 0, plhullz - 84)
+                trace.endpos = pl:EyePos() + Vector(0, 0, plhullz - 84) + pl:EyeAngles():Forward() * 300
+            else
+                trace.start = pl:EyePos() + Vector(0, 0, 8)
+                trace.endpos = pl:EyePos() + Vector(0, 0, 8) + pl:EyeAngles():Forward() * 100
+            end
 
-	-- Prop rotation lock key
-	if pl && pl:IsValid() && pl:Alive() && pl:Team() == TEAM_PROPS then
-		if key == IN_RELOAD then
-			if pl:GetPlayerLockedRot() then
-				pl:SetNWBool("PlayerLockedRotation", false)
-				pl:PrintMessage(HUD_PRINTCENTER, PHE.LANG.HUD.ROTLOCKOFF)
-			else
-				pl:SetNWBool("PlayerLockedRotation", true)
-				pl:PrintMessage(HUD_PRINTCENTER, PHE.LANG.HUD.ROTLOCKON)
-			end
-		end
-	end
+            trace.filter = ents.FindByClass("ph_prop")
+            local trace2 = util.TraceLine(trace)
+
+            if trace2.Entity and trace2.Entity:IsValid() and table.HasValue(PHE.USABLE_PROP_ENTITIES, trace2.Entity:GetClass()) then
+                if pl.UseTime <= CurTime() then
+                    if not pl:IsHoldingEntity() then
+                        local hmx, hz = trace2.Entity:GetPropSize()
+
+                        if GetConVar("phe_check_props_boundaries"):GetBool() and not pl:CheckHull(hmx, hmx, hz) then
+                            pl:SendLua("chat.AddText(Color(235, 10, 15), \"[PH: Enhanced]\", Color(220, 220, 220), \" There is no room to change that prop!\")")
+                        else
+                            GAMEMODE:PlayerExchangeProp(pl, trace2.Entity)
+                        end
+                    end
+
+                    pl.UseTime = CurTime() + 1
+                end
+            end
+        end
+
+        if key == IN_ATTACK2 then
+            DoPlayerTaunt(pl)
+        end
+    end
+
+    -- Prop rotation lock key
+    if pl and pl:IsValid() and pl:Alive() and pl:Team() == TEAM_PROPS then
+        if key == IN_RELOAD then
+            if pl:GetPlayerLockedRot() then
+                pl:SetNWBool("PlayerLockedRotation", false)
+                pl:PrintMessage(HUD_PRINTCENTER, PHE.LANG.HUD.ROTLOCKOFF)
+            else
+                pl:SetNWBool("PlayerLockedRotation", true)
+                pl:PrintMessage(HUD_PRINTCENTER, PHE.LANG.HUD.ROTLOCKON)
+            end
+        end
+    end
 end
+
 hook.Add("KeyPress", "PlayerPressedKey", PlayerPressedKey, HOOK_HIGH)

@@ -6,7 +6,7 @@
 	"$nocull" 1
 	"$phong" "1"
 	"$phongexponent" "20"
-	"$phongboost" "0.75"	
+	"$phongboost" "0.75"
 	"$phongfresnelranges"	"[.3 1 7]"
 
 	"$rimlight" "1"
