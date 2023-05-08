@@ -13,19 +13,7 @@ local TEAM_TAUNT_DIRS = {
     [TEAM_HUNTERS] = "taunts/hunters"
 }
 
-net.Receive("CL2SV_PlayThisTaunt", function(len, ply)
-    local snd = net.ReadString() or "" -- don't error if client is drunk
-    snd = "taunts/" .. snd
-
-    if IsTaunting(ply) then
-        if CanWaitHint(ply) then
-            ply.WaitHint = math.min(ply:GetNW2Float("NextCanTaunt", 0), CurTime() + 1)
-            ply:ChatPrint("[PH: Infinity] - You're still playing a taunt. You can taunt again in " .. math.ceil(ply:GetNW2Float("NextCanTaunt", 0) - CurTime()) .. " seconds.")
-        end
-
-        return
-    end
-
+function PHE:MakePlayerTaunt(ply, snd)
     if not file.Exists("sound/" .. snd, "GAME") then
         ply:ChatPrint("[PH: Infinity] - Failed to play taunt! (doesn't exist???)")
 
@@ -57,4 +45,21 @@ net.Receive("CL2SV_PlayThisTaunt", function(len, ply)
     end
 
     ply:SetNW2Float("NextCanTaunt", CurTime() + duration)
+    print("set next", CurTime() + duration)
+end
+
+net.Receive("CL2SV_PlayThisTaunt", function(len, ply)
+    local snd = net.ReadString() or "" -- don't error if client is drunk
+    snd = "taunts/" .. snd
+
+    if IsTaunting(ply) then
+        if CanWaitHint(ply) then
+            ply.WaitHint = math.min(ply:GetNW2Float("NextCanTaunt", 0), CurTime() + 1)
+            ply:ChatPrint("[PH: Infinity] - You're still playing a taunt. You can taunt again in " .. math.ceil(ply:GetNW2Float("NextCanTaunt", 0) - CurTime()) .. " seconds.")
+        end
+
+        return
+    end
+
+    PHE:MakePlayerTaunt(ply, snd)
 end)

@@ -17,14 +17,16 @@ local function AutoTauntThink()
             local timeLeft = TauntTimeLeft(ply)
 
             if IsValid(ply) and ply:Alive() and ply:Team() == TEAM_PROPS and timeLeft <= 0 then
-                local rand_taunt = table.Random(WHOLE_TAUNTS)
+                local da = table.Random(WHOLE_TAUNTS)
+                local rand_taunt, name = table.Random(da)
 
                 if not isstring(rand_taunt) then
                     rand_taunt = tostring(rand_taunt)
                 end
 
-                ply:EmitSound(rand_taunt, 100)
+                ply:EmitSound("taunts/" .. rand_taunt, 100)
                 ply:SetNW2Float("LastTauntTime", CurTime())
+                ply:ChatPrint("You auto-taunted " .. name)
             end
         end
     end
