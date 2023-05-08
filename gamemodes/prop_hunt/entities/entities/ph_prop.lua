@@ -105,24 +105,24 @@ if SERVER then
                 MsgAll(attacker:Name() .. " found and killed " .. pl:Name() .. "\n")
 
                 if GetConVar("ph_freezecam"):GetBool() then
-                    if pl:GetNWBool("InFreezeCam", false) then
+                    if pl:GetNW2Bool("InFreezeCam", false) then
                         pl:PrintMessage(HUD_PRINTCONSOLE, "!! WARNING: Something went wrong with the Freeze Camera, but it's still enabled!")
                     else
                         timer.Simple(0.5, function()
-                            if not pl:GetNWBool("InFreezeCam", false) then
+                            if not pl:GetNW2Bool("InFreezeCam", false) then
                                 -- Play the good old Freeze Cam sound
                                 net.Start("PlayFreezeCamSound")
                                 net.Send(pl)
-                                pl:SetNWEntity("PlayerKilledByPlayerEntity", attacker)
-                                pl:SetNWBool("InFreezeCam", true)
+                                pl:SetNW2Entity("PlayerKilledByPlayerEntity", attacker)
+                                pl:SetNW2Bool("InFreezeCam", true)
                                 pl:SpectateEntity(attacker)
                                 pl:Spectate(OBS_MODE_FREEZECAM)
                             end
                         end)
 
                         timer.Simple(4.5, function()
-                            if pl:GetNWBool("InFreezeCam", false) then
-                                pl:SetNWBool("InFreezeCam", false)
+                            if pl:GetNW2Bool("InFreezeCam", false) then
+                                pl:SetNW2Bool("InFreezeCam", false)
                                 pl:Spectate(OBS_MODE_CHASE)
                                 pl:SpectateEntity(nil)
                             end

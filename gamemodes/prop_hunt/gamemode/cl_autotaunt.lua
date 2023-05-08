@@ -16,7 +16,7 @@ local tweenTime = 0
 
 local function TimeLeft()
     local ply = LocalPlayer()
-    local lastTauntTime = ply:GetNWFloat("LastTauntTime")
+    local lastTauntTime = ply:GetNW2Float("LastTauntTime")
     local nextTauntTime = lastTauntTime + delay
     local currentTime = CurTime()
 

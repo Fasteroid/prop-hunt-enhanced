@@ -46,7 +46,7 @@ local function DoConfig()
 			dmax	= {16,16,28}
 	]]
     local function SetEntityData(ent, tab1, tab2)
-        ent:SetNWBool("hasCustomHull", true)
+        ent:SetNW2Bool("hasCustomHull", true)
         ent.m_Hull = tab1
         ent.m_dHull = tab2
     end

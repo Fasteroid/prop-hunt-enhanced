@@ -1,6 +1,6 @@
 -- Validity check to prevent some sort of spam
 local function IsTaunting(ply)
-    return ply:GetNWFloat("NextCanTaunt", 0) >= CurTime()
+    return ply:GetNW2Float("NextCanTaunt", 0) >= CurTime()
 end
 
 local function CanWaitHint(ply)
@@ -19,8 +19,8 @@ net.Receive("CL2SV_PlayThisTaunt", function(len, ply)
 
     if IsTaunting(ply) then
         if CanWaitHint(ply) then
-            ply.WaitHint = math.min(ply:GetNWFloat("NextCanTaunt", 0), CurTime() + 1)
-            ply:ChatPrint("[PH: Infinity] - You're still playing a taunt. You can taunt again in " .. math.ceil(ply:GetNWFloat("NextCanTaunt", 0) - CurTime()) .. " seconds.")
+            ply.WaitHint = math.min(ply:GetNW2Float("NextCanTaunt", 0), CurTime() + 1)
+            ply:ChatPrint("[PH: Infinity] - You're still playing a taunt. You can taunt again in " .. math.ceil(ply:GetNW2Float("NextCanTaunt", 0) - CurTime()) .. " seconds.")
         end
 
         return
@@ -56,5 +56,5 @@ net.Receive("CL2SV_PlayThisTaunt", function(len, ply)
         ply:PS2_AddStandardPoints(score, "Taunting")
     end
 
-    ply:SetNWFloat("NextCanTaunt", CurTime() + duration)
+    ply:SetNW2Float("NextCanTaunt", CurTime() + duration)
 end)

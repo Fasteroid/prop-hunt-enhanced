@@ -62,7 +62,7 @@ local CircleMat = Material("SGM/playercircle")
 
 function GM:DrawPlayerRing(pPlayer)
     if not IsValid(pPlayer) then return end
-    if not pPlayer:GetNWBool("DrawRing", false) then return end
+    if not pPlayer:GetNW2Bool("DrawRing", false) then return end
     if not pPlayer:Alive() then return end
     local trace = {}
     trace.start = pPlayer:GetPos() + Vector(0, 0, 50)
@@ -123,7 +123,7 @@ end
 ---------------------------------------------------------]]
 function GM:GetTeamColor(ent)
     if GAMEMODE.SelectColor and IsValid(ent) then
-        local clr = ent:GetNWString("NameColor", -1)
+        local clr = ent:GetNW2String("NameColor", -1)
 
         if clr and clr ~= -1 and clr ~= "" then
             clr = list.Get("PlayerColours")[clr]

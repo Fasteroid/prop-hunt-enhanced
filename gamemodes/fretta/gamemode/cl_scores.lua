@@ -85,7 +85,7 @@ end
 
 function GM:AddScoreboardWantsChange(ScoreBoard)
     local f = function(ply)
-        if ply:GetNWBool("WantsVote", false) then
+        if ply:GetNW2Bool("WantsVote", false) then
             local lbl = vgui.Create("DLabel")
             lbl:SetFont("Marlett")
             lbl:SetText("a")

@@ -169,7 +169,7 @@ if SERVER then
     unstuck:help("Attempts to get you unstuck.")
 
     hook.Add("Think", "PH:Infinity.UnstuckLogic", function()
-        for k, ply in pairs(player.GetHumans()) do
+        for _, ply in ipairs(player.GetHumans()) do
             if not ply:Alive() then continue end
             local tick_handler = unstuck_tick_handlers[ply:Team()]
             if not tick_handler then continue end

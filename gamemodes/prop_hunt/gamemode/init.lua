@@ -385,7 +385,7 @@ function DoPlayerTaunt(pl)
         pl.last_taunt_time = CurTime() + GetConVar("ph_normal_taunt_delay"):GetInt()
         pl.last_taunt = rand_taunt
         pl:EmitSound(rand_taunt, 100)
-        pl:SetNWFloat("LastTauntTime", CurTime())
+        pl:SetNW2Float("LastTauntTime", CurTime())
     end
 end
 
@@ -418,16 +418,16 @@ end)
 
 -- Called when the players spawns
 function PlayerSpawn(pl)
-    pl:SetNWBool("PlayerLockedRotation", false)
-    pl:SetNWBool("InFreezeCam", false)
-    pl:SetNWEntity("PlayerKilledByPlayerEntity", nil)
+    pl:SetNW2Bool("PlayerLockedRotation", false)
+    pl:SetNW2Bool("InFreezeCam", false)
+    pl:SetNW2Entity("PlayerKilledByPlayerEntity", nil)
     pl:Blind(false)
     pl:RemoveProp()
     pl:SetColor(Color(255, 255, 255, 255))
     pl:SetRenderMode(RENDERMODE_TRANSALPHA)
     pl:UnLock()
     pl:ResetHull()
-    pl:SetNWFloat("LastTauntTime", CurTime())
+    pl:SetNW2Float("LastTauntTime", CurTime())
     pl.last_taunt_time = 0
     net.Start("ResetHull")
     net.Send(pl)
@@ -444,7 +444,7 @@ function PlayerSpawn(pl)
 
     -- Listen server host
     if not game.IsDedicated() then
-        pl:SetNWBool("ListenServerHost", pl:IsListenServerHost())
+        pl:SetNW2Bool("ListenServerHost", pl:IsListenServerHost())
     end
 end
 
@@ -718,10 +718,10 @@ function PlayerPressedKey(pl, key)
     if pl and pl:IsValid() and pl:Alive() and pl:Team() == TEAM_PROPS then
         if key == IN_RELOAD then
             if pl:GetPlayerLockedRot() then
-                pl:SetNWBool("PlayerLockedRotation", false)
+                pl:SetNW2Bool("PlayerLockedRotation", false)
                 pl:PrintMessage(HUD_PRINTCENTER, PHE.LANG.HUD.ROTLOCKOFF)
             else
-                pl:SetNWBool("PlayerLockedRotation", true)
+                pl:SetNW2Bool("PlayerLockedRotation", true)
                 pl:PrintMessage(HUD_PRINTCENTER, PHE.LANG.HUD.ROTLOCKON)
             end
         end

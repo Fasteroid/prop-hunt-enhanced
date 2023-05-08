@@ -440,7 +440,7 @@ function GM:PlayerDeathThink(pl)
 
     -- Don't respawn yet - wait for minimum time...
     if GAMEMODE.MinimumDeathLength then
-        pl:SetNWFloat("RespawnTime", pl.DeathTime + GAMEMODE.MinimumDeathLength)
+        pl:SetNW2Float("RespawnTime", pl.DeathTime + GAMEMODE.MinimumDeathLength)
         if timeDead < pl:GetRespawnTime() then return end
     end
 

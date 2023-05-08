@@ -2,7 +2,7 @@ local meta = FindMetaTable("Player")
 if not meta then return end
 
 function meta:SetPlayerClass(strName)
-    self:SetNWString("Class", strName)
+    self:SetNW2String("Class", strName)
     local c = player_class.Get(strName)
 
     if not c then
@@ -11,7 +11,7 @@ function meta:SetPlayerClass(strName)
 end
 
 function meta:GetPlayerClassName()
-    return self:GetNWString("Class", "Default")
+    return self:GetNW2String("Class", "Default")
 end
 
 function meta:GetPlayerClass()
@@ -89,9 +89,9 @@ function meta:OnSpawn()
     end
 
     if Class.DrawTeamRing then
-        self:SetNWBool("DrawRing", true)
+        self:SetNW2Bool("DrawRing", true)
     else
-        self:SetNWBool("DrawRing", false)
+        self:SetNW2Bool("DrawRing", false)
     end
 
     if Class.DrawViewModel == false then
@@ -218,6 +218,6 @@ end
 
 function meta:UpdateNameColor()
     if GAMEMODE.SelectColor then
-        self:SetNWString("NameColor", self:GetInfo("cl_playercolor"))
+        self:SetNW2String("NameColor", self:GetInfo("cl_playercolor"))
     end
 end

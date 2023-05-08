@@ -46,7 +46,7 @@ function CLASS:OnSpawn(pl)
 
     pl.ph_prop:SetSolid(SOLID_BBOX)
     pl.ph_prop:SetOwner(pl)
-    pl:SetNWEntity("PlayerPropEntity", pl.ph_prop)
+    pl:SetNW2Entity("PlayerPropEntity", pl.ph_prop)
 
     -- Delay start the AutoTaunt stuff and Control Tutorial
     timer.Simple(1, function()

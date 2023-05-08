@@ -2,7 +2,7 @@
 local function TauntTimeLeft(ply)
     -- Always return 1 when the conditions are not met
     if not IsValid(ply) or not ply:Alive() or ply:Team() ~= TEAM_PROPS then return 1 end
-    local lastTauntTime = ply:GetNWFloat("LastTauntTime")
+    local lastTauntTime = ply:GetNW2Float("LastTauntTime")
     local nextTauntTime = lastTauntTime + GetConVar("ph_autotaunt_delay"):GetInt()
     local currentTime = CurTime()
 
@@ -24,7 +24,7 @@ local function AutoTauntThink()
                 end
 
                 ply:EmitSound(rand_taunt, 100)
-                ply:SetNWFloat("LastTauntTime", CurTime())
+                ply:SetNW2Float("LastTauntTime", CurTime())
             end
         end
     end

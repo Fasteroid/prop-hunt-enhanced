@@ -50,14 +50,14 @@ function CLASS:OnSpawn(pl)
     local lockfunc = function()
         if pl:IsValid() then
             pl:Lock()
-            pl:SetNWBool("PH:Infinity.Locked", true)
+            pl:SetNW2Bool("PH:Infinity.Locked", true)
         end
     end
 
     local unlockfunc = function()
         if pl:IsValid() then
             pl:UnLock()
-            pl:SetNWBool("PH:Infinity.Locked", false)
+            pl:SetNW2Bool("PH:Infinity.Locked", false)
         end
     end
 

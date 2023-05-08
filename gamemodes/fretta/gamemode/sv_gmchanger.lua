@@ -113,7 +113,7 @@ function GM:VotePlayGamemode(ply, gamemode)
     if GAMEMODE.WinningGamemode then return end
     if not GAMEMODE:InGamemodeVote() then return end
     if not GAMEMODE:IsValidGamemode(gamemode) then return end
-    ply:SetNWString("Wants", gamemode)
+    ply:SetNW2String("Wants", gamemode)
 end
 
 concommand.Add("votegamemode", function(pl, cmd, args)
@@ -125,7 +125,7 @@ function GM:VotePlayMap(ply, map)
     if not GAMEMODE.WinningGamemode then return end
     if not GAMEMODE:InGamemodeVote() then return end
     if not GAMEMODE:IsValidGamemode(GAMEMODE.WinningGamemode, map) then return end
-    ply:SetNWString("Wants", map)
+    ply:SetNW2String("Wants", map)
 end
 
 concommand.Add("votemap", function(pl, cmd, args)
@@ -138,7 +138,7 @@ function GM:GetFractionOfPlayersThatWantChange()
     local WantsChange = 0
 
     for k, player in pairs(Humans) do
-        if player:GetNWBool("WantsVote") then
+        if player:GetNW2Bool("WantsVote") then
             WantsChange = WantsChange + 1
         end
 
@@ -179,8 +179,8 @@ end
 
 function GM:VoteForChange(ply)
     if GetConVarNumber("fretta_voting") == 0 then return end
-    if ply:GetNWBool("WantsVote") then return end
-    ply:SetNWBool("WantsVote", true)
+    if ply:GetNW2Bool("WantsVote") then return end
+    ply:SetNW2Bool("WantsVote", true)
     local VotesNeeded = GAMEMODE:GetVotesNeededForChange()
     local NeedTxt = ""
 
@@ -215,7 +215,7 @@ end)
 
 function GM:ClearPlayerWants()
     for k, ply in pairs(player.GetAll()) do
-        ply:SetNWString("Wants", "")
+        ply:SetNW2String("Wants", "")
     end
 end
 
@@ -262,7 +262,7 @@ function GM:GetWinningWant()
     local Votes = {}
 
     for k, ply in pairs(player.GetAll()) do
-        local want = ply:GetNWString("Wants", nil)
+        local want = ply:GetNW2String("Wants", nil)
 
         if want and want ~= "" then
             Votes[want] = Votes[want] or 0

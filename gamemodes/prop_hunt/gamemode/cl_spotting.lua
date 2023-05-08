@@ -9,10 +9,10 @@ HUDVariables = HUDVariables or {} -- not sure if cl_hud.lua runs first
 function PHE:Spot()
     if LocalPlayer():Team() ~= TEAM_HUNTERS then return end -- we'll check again serverside for good measure
     if not LocalPlayer():Alive() then return end -- also check this serverside
-    if LocalPlayer():GetNWBool("PH:Infinity.Locked", false) then return end -- also check this serverside
+    if LocalPlayer():GetNW2Bool("PH:Infinity.Locked", false) then return end -- also check this serverside
 
     -- still on cooldown
-    if LocalPlayer():GetNWFloat("PH:Infinity.SpotCooldown", 0) > CurTime() then
+    if LocalPlayer():GetNW2Float("PH:Infinity.SpotCooldown", 0) > CurTime() then
         surface.PlaySound("common/talk.wav")
 
         return

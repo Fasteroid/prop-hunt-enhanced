@@ -51,13 +51,13 @@ local function AttemptSpotting(hunter)
 end
 
 net.Receive("PH:Infinity.Spot", function(_, hunter)
-    if hunter:GetNWFloat("PH:Infinity.SpotCooldown") > CurTime() then return end -- nice hacks dude
+    if hunter:GetNW2Float("PH:Infinity.SpotCooldown") > CurTime() then return end -- nice hacks dude
     if not hunter:Alive() then return end -- nice hacks dude
     if hunter:Team() ~= TEAM_HUNTERS then return end -- nope
     local victim = AttemptSpotting(hunter)
 
     if not victim then
-        hunter:SetNWFloat("PH:Infinity.SpotCooldown", CurTime() + SPOT_FAIL_COOL)
+        hunter:SetNW2Float("PH:Infinity.SpotCooldown", CurTime() + SPOT_FAIL_COOL)
         net.Start("PH:Infinity.Spot")
         net.WriteUInt(1, 4) -- spotting failed sound
         net.Send(hunter)
@@ -65,7 +65,7 @@ net.Receive("PH:Infinity.Spot", function(_, hunter)
         return
     end
 
-    hunter:SetNWFloat("PH:Infinity.SpotCooldown", CurTime() + 1)
+    hunter:SetNW2Float("PH:Infinity.SpotCooldown", CurTime() + 1)
     local glow_receivers = RecipientFilter()
     glow_receivers:AddRecipientsByTeam(TEAM_HUNTERS)
     glow_receivers:AddPlayer(victim)
@@ -90,7 +90,7 @@ net.Receive("PH:Infinity.Spot", function(_, hunter)
     net.Send(victim)
     -- force the prop to taunt with a fear taunt
     local randomtaunt = "taunts/" .. pickRandom(PHE.TAUNTS.PROPS.fear)
-    victim:SetNWFloat("NextCanTaunt", CurTime() + NewSoundDuration("sound/" .. randomtaunt))
+    victim:SetNW2Float("NextCanTaunt", CurTime() + NewSoundDuration("sound/" .. randomtaunt))
     victim:EmitSound(randomtaunt)
     victim.nextSpot = CurTime() + SPOT_IMMUNE_TIME
 

@@ -141,7 +141,7 @@ local icons = {
                 if t < 2 then
                     return math.floor((t * 10) % 2)
                 else
-                    return LocalPlayer():GetNWFloat("PH:Infinity.SpotCooldown", 0) < CurTime() and 0 or false
+                    return LocalPlayer():GetNW2Float("PH:Infinity.SpotCooldown", 0) < CurTime() and 0 or false
                 end
             end
         },
@@ -160,7 +160,7 @@ local icons = {
             [false] = Color(120, 120, 120, 255),
             [true] = Color(255, 255, 0, 255),
             state = function()
-                return LocalPlayer():GetNWBool("PlayerLockedRotation", false)
+                return LocalPlayer():GetNW2Bool("PlayerLockedRotation", false)
             end
         },
         spotted = {

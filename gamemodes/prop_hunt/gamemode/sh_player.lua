@@ -37,10 +37,10 @@ function Player:Blind(bool)
 
         if bool then
             net.WriteBool(true)
-            self:SetNWBool("isBlind", true)
+            self:SetNW2Bool("isBlind", true)
         else
             net.WriteBool(false)
-            self:SetNWBool("isBlind", false)
+            self:SetNW2Bool("isBlind", false)
         end
 
         net.Send(self)
@@ -51,12 +51,12 @@ end
 
 -- Player has locked prop rotation?
 function Player:GetPlayerLockedRot()
-    return self:GetNWBool("PlayerLockedRotation", false)
+    return self:GetNW2Bool("PlayerLockedRotation", false)
 end
 
 -- Player's prop entity
 function Player:GetPlayerPropEntity()
-    return self:GetNWEntity("PlayerPropEntity", nil)
+    return self:GetNW2Entity("PlayerPropEntity", nil)
 end
 
 -- Removes the prop given to the player
@@ -72,7 +72,7 @@ end
 -- Returns ping for the scoreboard
 function Player:ScoreboardPing()
     -- If this is not a dedicated server and player is the host
-    if self:GetNWBool("ListenServerHost") then
+    if self:GetNW2Bool("ListenServerHost") then
         return "SV"
     elseif self:IsBot() then
         return "BOT" -- otherwise this will act very strange.

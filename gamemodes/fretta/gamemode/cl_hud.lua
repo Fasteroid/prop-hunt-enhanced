@@ -16,33 +16,35 @@ function GM:AddHUDItem(item, pos, parent)
 end
 
 function GM:HUDNeedsUpdate()
-    if not IsValid(LocalPlayer()) then return false end
-    if Class ~= LocalPlayer():GetNWString("Class", "Default") then return true end
-    if Alive ~= LocalPlayer():Alive() then return true end
-    if Team ~= LocalPlayer():Team() then return true end
-    if WaitingToRespawn ~= (LocalPlayer():GetNWFloat("RespawnTime", 0) > CurTime() and LocalPlayer():Team() ~= TEAM_SPECTATOR and not LocalPlayer():Alive()) then return true end
+    local lp = LocalPlayer()
+    if not IsValid(lp) then return false end
+    if Class ~= lp:GetNW2String("Class", "Default") then return true end
+    if Alive ~= lp:Alive() then return true end
+    if Team ~= lp:Team() then return true end
+    if WaitingToRespawn ~= (lp:GetNW2Float("RespawnTime", 0) > CurTime() and lp:Team() ~= TEAM_SPECTATOR and not lp:Alive()) then return true end
     if InRound ~= GetGlobalBool("InRound", false) then return true end
     if RoundResult ~= GetGlobalInt("RoundResult", 0) then return true end
     if RoundWinner ~= GetGlobalEntity("RoundWinner", nil) then return true end
-    if IsObserver ~= LocalPlayer():IsObserver() then return true end
-    if ObserveMode ~= LocalPlayer():GetObserverMode() then return true end
-    if ObserveTarget ~= LocalPlayer():GetObserverTarget() then return true end
+    if IsObserver ~= lp:IsObserver() then return true end
+    if ObserveMode ~= lp:GetObserverMode() then return true end
+    if ObserveTarget ~= lp:GetObserverTarget() then return true end
     if InVote ~= GAMEMODE:InGamemodeVote() then return true end
 
     return false
 end
 
 function GM:OnHUDUpdated()
-    Class = LocalPlayer():GetNWString("Class", "Default")
-    Alive = LocalPlayer():Alive()
-    Team = LocalPlayer():Team()
-    WaitingToRespawn = LocalPlayer():GetNWFloat("RespawnTime", 0) > CurTime() and LocalPlayer():Team() ~= TEAM_SPECTATOR and not Alive
+    local lp = LocalPlayer()
+    Class = lp:GetNW2String("Class", "Default")
+    Alive = lp:Alive()
+    Team = lp:Team()
+    WaitingToRespawn = lp:GetNW2Float("RespawnTime", 0) > CurTime() and lp:Team() ~= TEAM_SPECTATOR and not Alive
     InRound = GetGlobalBool("InRound", false)
     RoundResult = GetGlobalInt("RoundResult", 0)
     RoundWinner = GetGlobalEntity("RoundWinner", nil)
-    IsObserver = LocalPlayer():IsObserver()
-    ObserveMode = LocalPlayer():GetObserverMode()
-    ObserveTarget = LocalPlayer():GetObserverTarget()
+    IsObserver = lp:IsObserver()
+    ObserveMode = lp:GetObserverMode()
+    ObserveTarget = lp:GetObserverTarget()
     InVote = GAMEMODE:InGamemodeVote()
 end
 
@@ -156,7 +158,7 @@ function GM:UpdateHUD_Dead(bWaitingToSpawn, InRound)
         RespawnTimer:SizeToContents()
 
         RespawnTimer:SetValueFunction(function()
-            return LocalPlayer():GetNWFloat("RespawnTime", 0)
+            return LocalPlayer():GetNW2Float("RespawnTime", 0)
         end)
 
         RespawnTimer:SetLabel("SPAWN IN")

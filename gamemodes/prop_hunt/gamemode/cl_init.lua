@@ -255,9 +255,9 @@ function HUDPaint()
     end
 
     -- The 'You were Killed By' text, or the Freeze Cam text.
-    if LocalPlayer():GetNWBool("InFreezeCam", false) then
+    if LocalPlayer():GetNW2Bool("InFreezeCam", false) then
         local textx = ScrW() / 2
-        draw.SimpleTextOutlined(string.format(PHE.LANG.HUD.FREEZECAM, LocalPlayer():GetNWEntity("PlayerKilledByPlayerEntity", LocalPlayer()):Name()), "TrebuchetBig", textx, ScrH() * 0.75, Color(255, 10, 10, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1.5, Color(0, 0, 0, 255))
+        draw.SimpleTextOutlined(string.format(PHE.LANG.HUD.FREEZECAM, LocalPlayer():GetNW2Entity("PlayerKilledByPlayerEntity", LocalPlayer()):Name()), "TrebuchetBig", textx, ScrH() * 0.75, Color(255, 10, 10, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1.5, Color(0, 0, 0, 255))
     end
 end
 
@@ -424,9 +424,10 @@ net.Receive("SetHull", function()
     local hulldz = net.ReadInt(32)
     local new_health = net.ReadInt(9)
     cHullz = huz
-    LocalPlayer():SetHull(Vector(hullxy * -1, hullxy * -1, 0), Vector(hullxy, hullxy, huz))
-    LocalPlayer():SetHullDuck(Vector(hullxy * -1, hullxy * -1, 0), Vector(hullxy, hullxy, hulldz))
-    LocalPlayer():SetHealth(new_health)
+    local pl = LocalPlayer()
+    pl:SetHull(Vector(hullxy * -1, hullxy * -1, 0), Vector(hullxy, hullxy, huz))
+    pl:SetHullDuck(Vector(hullxy * -1, hullxy * -1, 0), Vector(hullxy, hullxy, hulldz))
+    pl:SetHealth(new_health)
 end)
 
 -- Replaces the flashlight with a client-side dynamic light for props
