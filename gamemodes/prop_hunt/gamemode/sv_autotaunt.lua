@@ -24,7 +24,7 @@ local function AutoTauntThink()
                     rand_taunt = tostring(rand_taunt)
                 end
 
-                ply:EmitSound("taunts/" .. rand_taunt, 100)
+                PHE:MakePlayerTaunt(ply, "taunts/" .. rand_taunt)
                 ply:SetNW2Float("LastTauntTime", CurTime())
                 ply:ChatPrint("You auto-taunted " .. name .. " (" .. rand_taunt .. ")")
             end
