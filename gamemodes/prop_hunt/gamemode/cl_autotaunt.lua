@@ -99,6 +99,8 @@ end
 net.Receive("AutoTauntSpawn", AutoTauntSpawn)
 net.Receive("AutoTauntRoundEnd", AutoTauntRoundEnd)
 
-timer.Create("PH:Infinity.AutoTauntChecker", 1, 0, function()
-    if not ph_autotaunt_enabled:GetBool() or not LocalPlayer():Alive() then AutoTauntRoundEnd() end
+hook.Add("InitPostEntity","PH:Infinity.AutoTauntChecker",function()
+    timer.Create("PH:Infinity.AutoTauntChecker", 1, 0, function()
+        if not ph_autotaunt_enabled:GetBool() or not not LocalPlayer():Alive() then AutoTauntRoundEnd() end
+    end)
 end)
