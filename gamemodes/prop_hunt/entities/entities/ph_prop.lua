@@ -109,6 +109,7 @@ if SERVER then
                         pl:PrintMessage(HUD_PRINTCONSOLE, "!! WARNING: Something went wrong with the Freeze Camera, but it's still enabled!")
                     else
                         timer.Simple(0.5, function()
+                            if not IsValid(pl) then return end
                             if not pl:GetNW2Bool("InFreezeCam", false) then
                                 -- Play the good old Freeze Cam sound
                                 net.Start("PlayFreezeCamSound")
@@ -121,6 +122,7 @@ if SERVER then
                         end)
 
                         timer.Simple(4.5, function()
+                            if not IsValid(pl) then return end
                             if pl:GetNW2Bool("InFreezeCam", false) then
                                 pl:SetNW2Bool("InFreezeCam", false)
                                 pl:Spectate(OBS_MODE_CHASE)
