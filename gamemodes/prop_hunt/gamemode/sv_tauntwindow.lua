@@ -36,20 +36,22 @@ function PHE:MakePlayerTaunt(ply, snd)
 
     ply:EmitSound(snd, 100)
     local duration = NewSoundDuration("sound/" .. snd)
-    local score = math.pow(duration, 1.2)
+    local score = math.pow(duration, 1.2) -- reward longer taunts
     local decimal = score % 1
-    score = math.floor(score) + (math.random() < decimal and 1 or 0)
+    score = math.floor(score) + (math.random() < decimal and 1 or 0) -- randomly sample to approach true point value at the limit
 
     if ply:Team() == TEAM_PROPS and GAMEMODE:IsRoundPlaying() then
         ply:PS2_AddStandardPoints(score, "Taunting")
     end
 
     ply:SetNW2Float("NextCanTaunt", CurTime() + duration)
-    print("set next", CurTime() + duration)
+
 end
 
 net.Receive("CL2SV_PlayThisTaunt", function(len, ply)
-    local snd = net.ReadString() or "" -- don't error if client is drunk
+    local snd = net.ReadString()
+    if not snd then return end -- client is drunk
+
     snd = "taunts/" .. snd
 
     if IsTaunting(ply) then

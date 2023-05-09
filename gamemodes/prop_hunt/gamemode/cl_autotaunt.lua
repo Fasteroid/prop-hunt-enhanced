@@ -1,26 +1,26 @@
 -- For the love of furry heck, THIS PLACE NEEDS A CLEAN!
 -- Props will autotaunt at specified intervals
-local isEnabled = false
-local isProp = false
-local delay = 45
-local started = false
-local timerID = "ph_autotaunt_timer"
-local teamCheckTimer = "ph_autotaunt_teamchecktimer"
-local xStart
-local xEnd
-local y
-local w = 140
-local h = 30
-local previousTime
-local tweenTime = 0
+local ph_autotaunt_enabled = GetConVar("ph_autotaunt_enabled")
+local ph_autotaunt_delay   = GetConVar("ph_autotaunt_delay")
+local ph_autotaunt_warning = ph_autotaunt_delay:GetInt() * 0.5 -- TODO: make this a convar
+
+local AutotauntDelay = ph_autotaunt_delay:GetInt()
+
+local animStartTime = CurTime()
+
+local function AutotauntColor(time)
+    local lol = (time / ph_autotaunt_warning)
+    local col = HSVToColor( lol*120, 1, 1 )
+    col.a = 50 + (1-lol) * 70
+    return col
+end
 
 local function TimeLeft()
-    local ply = LocalPlayer()
-    local lastTauntTime = ply:GetNW2Float("LastTauntTime")
-    local nextTauntTime = lastTauntTime + delay
+    local lastTauntTime = LocalPlayer():GetNW2Float("NextCanTaunt")
+    local nextTauntTime = lastTauntTime + AutotauntDelay
     local currentTime = CurTime()
 
-    return nextTauntTime - currentTime
+    return math.max( nextTauntTime - currentTime + 1, 1 )
 end
 
 -- a: amplitude
@@ -48,94 +48,57 @@ local function outElastic(t, b, c, d, a, p)
 end
 
 local function AutoTauntPaint()
-    if not isEnabled or not isProp or not started then return end
 
-    if tweenTime < 1 then
-        x = outElastic(tweenTime, xStart, xEnd - xStart, 1, 1, 0.5)
-        local cTime = CurTime()
-        tweenTime = tweenTime + cTime - previousTime
-        previousTime = cTime
-    end
+    local t = CurTime()
 
-    local timeLeft = math.ceil(TimeLeft())
-    local percentage = timeLeft / delay
-    local txt = "Auto taunting in " .. timeLeft
-    draw.RoundedBox(5, x, y, w, h, Color(0, 0, 0, 200))
-    draw.RoundedBox(5, x + 5, y + 5, (w - 10) * percentage, h - 10, Color(200, 0, 0, 200))
-    draw.DrawText(txt, "HunterBlindLockFont", x + 70, ScrH() - 57, Color(255, 255, 255, 255), TEXT_ALIGN_CENTER)
-end
+    local ScrW = ScrW()
+    local ScrH = ScrH()
 
-hook.Add("HUDPaint", "PH_AutoTauntPaint", AutoTauntPaint)
+    local w = 140
+    local h = 30
+    
+    local x = ScrW - w - 32
+    local y = ScrH - h - 32
 
-local function RemoveTimer()
-    if timer.Exists(timerID) then
-        timer.Remove(timerID)
-    end
-end
+    local time = TimeLeft()
 
-local function CheckAutoTaunt()
-    --local timeLeft = TimeLeft()
-    local ply = LocalPlayer()
-
-    -- Stop everything under these conditions
-    if not ply:Alive() or ply:Team() ~= TEAM_PROPS then
-        started = false
-        RemoveTimer()
-        printVerbose("[PH:E AutoTaunt] Blocked!")
-
+    if time > ph_autotaunt_warning then 
+        animStartTime = t
         return
-    end
-end
-
-local function Setup()
-    local ply = LocalPlayer()
-    isEnabled = GetConVar("ph_autotaunt_enabled"):GetBool()
-    isProp = ply:Team() == TEAM_PROPS
-    started = true
-    previousTime = CurTime()
-    tweenTime = 0
-
-    if isEnabled and isProp then
-        delay = GetConVar("ph_autotaunt_delay"):GetInt()
-        timer.Create(timerID, 1, 0, CheckAutoTaunt)
-    end
-end
-
-local function CheckPlayer()
-    local ply = LocalPlayer()
-
-    if ply:Alive() and ply:Team() == TEAM_PROPS then
-        if timer.Exists(teamCheckTimer) then
-            timer.Remove(teamCheckTimer)
-        end
-
-        Setup()
-
-        return true
+    else
+        local tweenTime = math.Clamp( (t - animStartTime) * 0.5, 0, 1)
+        animStopTime = t
+        lastDelayTime = time
+        x = x + outElastic( tweenTime, 200, -200, 1, 1, 0.5 )
     end
 
-    return false
+    local percent = (1 - (time-1) / ph_autotaunt_warning)
+    local spaz = math.Clamp(10*(percent-0.9), 0, 1)
+    x = x + math.random(-2,2) * spaz
+    y = y + math.random(-2,2) * spaz
+
+    draw.RoundedBox(5, x, y, w, h, Color(0, 0, 0, 100))
+    draw.RoundedBox(5, x + 5, y + 5, (w - 10) * percent, h - 10, AutotauntColor(time))
+    draw.DrawText("Auto Taunt", "HunterBlindLockFont", x + 10, y + 8, Color(255, 255, 255, 255), TEXT_ALIGN_LEFT)
+    draw.DrawText(math.ceil(time).."", "HunterBlindLockFont", x + w + -10, y + 8, Color(255, 255, 255, 255), TEXT_ALIGN_RIGHT)
 end
 
 local function AutoTauntSpawn()
-    xStart = ScrW() + 200
-    xEnd = ScrW() - 195
-    y = ScrH() - 65
+    if not ph_autotaunt_enabled:GetBool() then return end -- autotaunt disabled
+    if LocalPlayer():Team() ~= TEAM_PROPS then return end -- not a prop
 
-    if not CheckPlayer() then
-        timer.Create(teamCheckTimer, 0.1, 10, CheckPlayer)
-    end
+    AutotauntDelay = ph_autotaunt_delay:GetInt()
+
+    hook.Add("HUDPaint", "PH_AutoTauntPaint", AutoTauntPaint)
 end
-
-net.Receive("AutoTauntSpawn", function()
-    AutoTauntSpawn()
-end)
 
 local function AutoTauntRoundEnd()
-    started = false
-    RemoveTimer()
+    hook.Remove("HUDPaint", "PH_AutoTauntPaint")
 end
 
-net.Receive("AutoTauntRoundEnd", function()
-    AutoTauntRoundEnd()
+net.Receive("AutoTauntSpawn", AutoTauntSpawn)
+net.Receive("AutoTauntRoundEnd", AutoTauntRoundEnd)
+
+timer.Create("PH:Infinity.AutoTauntChecker", 1, 0, function()
+    if not ph_autotaunt_enabled:GetBool() or not LocalPlayer():Alive() then AutoTauntRoundEnd() end
 end)
