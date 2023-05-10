@@ -2,14 +2,18 @@
 -- Props will autotaunt at specified intervals
 local ph_autotaunt_enabled = GetConVar("ph_autotaunt_enabled")
 local ph_autotaunt_delay   = GetConVar("ph_autotaunt_delay")
-local ph_autotaunt_warning = ph_autotaunt_delay:GetInt() * 0.5 -- TODO: make this a convar
+
+function CalcAutotauntWarning(delay) -- todo: make this a convar
+    return delay * 0.5
+end
 
 local AutotauntDelay = ph_autotaunt_delay:GetInt()
+local AutotauntWarning = CalcAutotauntWarning(AutotauntDelay) -- TODO: make this a convar
 
 local animStartTime = CurTime()
 
 local function AutotauntColor(time)
-    local lol = (time / ph_autotaunt_warning)
+    local lol = (time / AutotauntWarning)
     local col = HSVToColor( lol*120, 1, 1 )
     col.a = 50 + (1-lol) * 70
     return col
@@ -48,7 +52,6 @@ local function outElastic(t, b, c, d, a, p)
 end
 
 local function AutoTauntPaint()
-
     local t = CurTime()
 
     local ScrW = ScrW()
@@ -62,7 +65,7 @@ local function AutoTauntPaint()
 
     local time = TimeLeft()
 
-    if time > ph_autotaunt_warning then 
+    if time > AutotauntWarning then 
         animStartTime = t
         return
     else
@@ -72,7 +75,7 @@ local function AutoTauntPaint()
         x = x + outElastic( tweenTime, 200, -200, 1, 1, 0.5 )
     end
 
-    local percent = (1 - (time-1) / ph_autotaunt_warning)
+    local percent = (1 - (time-1) / AutotauntWarning)
     local spaz = math.Clamp(10*(percent-0.9), 0, 1)
     x = x + math.random(-2,2) * spaz
     y = y + math.random(-2,2) * spaz
@@ -83,24 +86,29 @@ local function AutoTauntPaint()
     draw.DrawText(math.ceil(time).."", "HunterBlindLockFont", x + w + -10, y + 8, Color(255, 255, 255, 255), TEXT_ALIGN_RIGHT)
 end
 
+local function AutoTauntRoundEnd()
+    timer.Remove("PH:Infinity.AutoTauntChecker")
+    hook.Remove("HUDPaint", "PH_AutoTauntPaint")
+end
+
 local function AutoTauntSpawn()
     if not ph_autotaunt_enabled:GetBool() then return end -- autotaunt disabled
     if LocalPlayer():Team() ~= TEAM_PROPS then return end -- not a prop
 
     AutotauntDelay = ph_autotaunt_delay:GetInt()
+    AutotauntWarning = CalcAutotauntWarning(AutotauntDelay)
 
     hook.Add("HUDPaint", "PH_AutoTauntPaint", AutoTauntPaint)
-end
 
-local function AutoTauntRoundEnd()
-    hook.Remove("HUDPaint", "PH_AutoTauntPaint")
+    timer.Create("PH:Infinity.AutoTauntChecker", 1, 0, function()
+        if not ph_autotaunt_enabled:GetBool() or not LocalPlayer():Alive() then 
+            print("remove autotaunt")
+            AutoTauntRoundEnd() 
+        end
+    end)
+
 end
 
 net.Receive("AutoTauntSpawn", AutoTauntSpawn)
 net.Receive("AutoTauntRoundEnd", AutoTauntRoundEnd)
 
-hook.Add("InitPostEntity","PH:Infinity.AutoTauntChecker",function()
-    timer.Create("PH:Infinity.AutoTauntChecker", 1, 0, function()
-        if not ph_autotaunt_enabled:GetBool() or not not LocalPlayer():Alive() then AutoTauntRoundEnd() end
-    end)
-end)
