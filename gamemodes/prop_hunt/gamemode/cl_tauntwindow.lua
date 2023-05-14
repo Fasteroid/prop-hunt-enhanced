@@ -144,7 +144,7 @@ local function MainFrame()
     end
 
     if LocalPlayer():Team() == TEAM_HUNTERS then
-        lastcategory = lastcategory or "searching"
+        lastcategory = lastcategory or "confusion"
     else
         lastcategory = lastcategory or "annoying"
     end
@@ -174,9 +174,13 @@ local function MainFrame()
             surface.PlaySound("taunts/" .. getline)
         end):SetIcon("icon16/information.png")
 
-        menu:AddOption("Copy to clipboard", function(self)
-            SetClipboardText(getline)
-        end):SetIcon("icon16/page_white_edit.png")
+        menu:AddOption("Copy for console bind...", function(self)
+            SetClipboardText('bind <key> "ph_taunt ' .. getline .. '"')
+            gui.ActivateGameUI()
+            RunConsoleCommand("showconsole")
+            print("CTRL + V to paste!")
+            frame:Close()
+        end):SetIcon("icon16/application_xp_terminal.png")
 
         menu:Open()
     end
