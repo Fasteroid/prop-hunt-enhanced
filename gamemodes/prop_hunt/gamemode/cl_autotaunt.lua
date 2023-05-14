@@ -1,5 +1,3 @@
--- For the love of furry heck, THIS PLACE NEEDS A CLEAN!
--- Props will autotaunt at specified intervals
 local ph_autotaunt_enabled = GetConVar("ph_autotaunt_enabled")
 local ph_autotaunt_delay   = GetConVar("ph_autotaunt_delay")
 
