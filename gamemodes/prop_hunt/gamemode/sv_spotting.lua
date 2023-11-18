@@ -45,7 +45,7 @@ local tick_interval = engine.TickInterval()
 
 function player_meta:GetLatentPosFrom(spotter)
     local ping_ind = math.ceil( spotter:Ping() * tick_interval )
-    ping_ind = math.min( ping_ind, MAX_POS_HISTORY )
+    ping_ind = math.min(ping_ind, #PHE.PositionHistory[self])
     return PHE.PositionHistory[self] and PHE.PositionHistory[self][ ping_ind ]
 end
 
@@ -83,6 +83,8 @@ local function AttemptSpotting(hunter)
         if ply.nextSpot > CurTime() then continue end -- already spotted
 
         local pos_ply = ply:GetLatentPosFrom(hunter)
+        if not pos_ply then return end
+
         local pos_hunter = hunter:GetShootPos()
         if (pos_ply - pos_hunter):GetNormalized():Dot(hunter:GetAimVector()) < MIN_DOT_PROD then continue end -- get better aim dude
 
