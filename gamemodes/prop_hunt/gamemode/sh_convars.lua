@@ -111,6 +111,7 @@ local convar_flags = {FCVAR_SERVER_CAN_EXECUTE, FCVAR_ARCHIVE, FCVAR_NOTIFY, FCV
 CreateConVar("ph_spot_min_dot", "0.90", convar_flags, "Minimum dot product required to spot, higher = better aim required.")
 CreateConVar("ph_spot_highlight_time", "10", convar_flags, "Amount of time to highlight spotted props for.")
 CreateConVar("ph_respot_immunity_time", "6", convar_flags, "Amount of time to ignore re-spotting for.")
+CreateConVar("ph_position_history_max", "512", convar_flags, "Number of positions to store for lag compensation")
 CreateConVar("ph_spot_fail_antispam", "8", convar_flags, "Amount of time to disable spotting if they miss.")
 CreateConVar("ph_spot_point_value", "20", convar_flags, "Amount of points to award for spotting.")
 CreateConVar("ph_forcetaunt_cost", "50", convar_flags, "Cost of !forcetaunt")

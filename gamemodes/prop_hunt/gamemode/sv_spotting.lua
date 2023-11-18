@@ -5,12 +5,50 @@ local SPOT_GLOW_TIME = GetConVar("ph_spot_highlight_time"):GetFloat()
 local SPOT_IMMUNE_TIME = GetConVar("ph_respot_immunity_time"):GetFloat()
 local SPOT_FAIL_COOL = GetConVar("ph_spot_fail_antispam"):GetFloat()
 local SPOT_POINT_VALUE = GetConVar("ph_spot_point_value"):GetInt()
+local MAX_POS_HISTORY  = GetConVar("ph_position_history_max"):GetInt()
 
 local function pickRandom(tbl)
     for _, k in RandomPairs(table.GetKeys(tbl)) do
         return tbl[k]
     end
 end
+
+do
+    PHE.PositionHistory = {}
+
+    -- Register the player's Position at every PlayerTick
+    hook.Add("PlayerTick", "PH:Infinity.PositionHistory", function(ply, mv)
+        if ply:Team() ~= TEAM_PROPS then return end
+
+        PHE.PositionHistory[ply] = PHE.PositionHistory[ply] or {}
+
+        if table.Count(PHE.PositionHistory[ply]) > MAX_POS_HISTORY then
+            table.remove(PHE.PositionHistory[ply], 1)
+        end
+
+        table.insert(PHE.PositionHistory[ply], ply:WorldSpaceCenter())
+    end)
+
+    -- Cleanup the PositionHistory to save a few bytes :skullemoji:
+    hook.Add("PlayerDisconnected", "PH:Infinity.HistoryCleaner", function(ply)
+        PHE.PositionHistory[ply] = nil
+    end)
+
+    -- Reset the player history every round (every respawn)
+    hook.Add("PlayerSpawn", "PH:Infinity.HistoryCleaner", function(ply)
+        PHE.PositionHistory[ply] = {}
+    end)
+end
+
+local player_meta = FindMetaTable("Player")
+local tick_interval = engine.TickInterval()
+
+function player_meta:GetLatentPosFrom(spotter)
+    local ping_ind = math.ceil( spotter:Ping() * tick_interval )
+    ping_ind = math.min( ping_ind, MAX_POS_HISTORY )
+    return PHE.PositionHistory[self] and PHE.PositionHistory[self][ ping_ind ]
+end
+
 
 local function checkLineOfSight(point, ent)
     local filter = player.GetAll()
@@ -27,19 +65,28 @@ end
 
 local function AttemptSpotting(hunter)
     local target = nil
-    local bestscore = 2147483647
+    local bestscore = 9e9
 
-    for _, ply in pairs(player.GetAll()) do
+    local player_count = player.GetCount()
+    local players = player.GetAll()
+
+    for i = 1, player_count do
+        local ply = players[i]
         if ply:Team() ~= TEAM_PROPS then continue end -- nope
         if not ply:Alive() then continue end -- nah
         if ply:GetVelocity():LengthSqr() < 3600 then continue end -- too stealthy
+
         if not checkLineOfSight(hunter:GetShootPos(), ply) then continue end -- no
+
         ply.nextSpot = ply.nextSpot or 0
+
         if ply.nextSpot > CurTime() then continue end -- already spotted
-        local pos_ply = ply:WorldSpaceCenter()
+
+        local pos_ply = ply:GetLatentPosFrom(hunter)
         local pos_hunter = hunter:GetShootPos()
         if (pos_ply - pos_hunter):GetNormalized():Dot(hunter:GetAimVector()) < MIN_DOT_PROD then continue end -- get better aim dude
-        local score = ply:GetPos():DistToSqr(hunter:GetShootPos())
+
+        local score = pos_ply:DistToSqr(hunter:GetShootPos())
 
         if score < bestscore then
             bestscore = score

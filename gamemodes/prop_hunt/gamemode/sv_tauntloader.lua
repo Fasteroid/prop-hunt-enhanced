@@ -41,6 +41,7 @@ local function CompileTaunts()
 end
 
 hook.Add("Initialize", "PHE.AddTauntTables", CompileTaunts)
+CompileTaunts() -- why?
 
 -- this really should be in a shared file but I'm lazy
 function PHE:GetAllTeamTaunt(teamid)
