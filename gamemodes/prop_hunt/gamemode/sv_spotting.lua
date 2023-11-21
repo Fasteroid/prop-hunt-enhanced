@@ -44,11 +44,12 @@ local player_meta = FindMetaTable("Player")
 local tick_interval = engine.TickInterval()
 
 function player_meta:GetLatentPosFrom(spotter)
-    local ping_ind = math.ceil( spotter:Ping() * tick_interval )
-    ping_ind = math.min(ping_ind, #PHE.PositionHistory[self])
-    return PHE.PositionHistory[self] and PHE.PositionHistory[self][ ping_ind ]
+    local history_size = #PHE.PositionHistory[self]
+    local ping_ind = math.floor( spotter:Ping() * tick_interval )
+    ping_ind = history_size - math.min(ping_ind, history_size)
+    local pose = PHE.PositionHistory[self] and PHE.PositionHistory[self][ ping_ind ]
+    return pose
 end
-
 
 local function checkLineOfSight(point, ent)
     local filter = player.GetAll()
