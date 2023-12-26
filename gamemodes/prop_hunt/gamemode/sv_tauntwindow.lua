@@ -13,7 +13,7 @@ local TEAM_TAUNT_DIRS = {
     [TEAM_HUNTERS] = "taunts/hunters"
 }
 
-function PHE:MakePlayerTaunt(ply, snd)
+function PHE:MakePlayerTaunt(ply, snd, nopoints)
     if not file.Exists("sound/" .. snd, "GAME") then
         ply:ChatPrint("[PH: Infinity] - Failed to play taunt! (doesn't exist???)")
 
@@ -34,18 +34,17 @@ function PHE:MakePlayerTaunt(ply, snd)
         return
     end
 
-    ply:EmitSound(snd, 100)
     local duration = NewSoundDuration("sound/" .. snd)
-    local score = math.pow(duration, 1.2) -- reward longer taunts
-    local decimal = score % 1
-    score = math.floor(score) + (math.random() < decimal and 1 or 0) -- randomly sample to approach true point value at the limit
 
-    if ply:Team() == TEAM_PROPS and GAMEMODE:IsRoundPlaying() then
+    if not nopoints and ply:Team() == TEAM_PROPS and GAMEMODE:IsRoundPlaying() then
+        local score = math.pow(duration, 1.2) -- reward longer taunts
+        local decimal = score % 1
+        score = math.floor(score) + (math.random() < decimal and 1 or 0) -- randomly sample to approach true point value at the limit
         ply:PS2_AddStandardPoints(score, "Taunting")
     end
 
+    ply:EmitSound(snd, 100)
     ply:SetNW2Float("NextCanTaunt", CurTime() + duration)
-
 end
 
 net.Receive("CL2SV_PlayThisTaunt", function(len, ply)

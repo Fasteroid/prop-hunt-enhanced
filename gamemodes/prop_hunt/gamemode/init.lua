@@ -20,6 +20,7 @@ include("sv_tauntloader.lua")
 include("sv_admin.lua")
 include("sv_autotaunt.lua")
 include("sv_tauntwindow.lua")
+include("sv_reactions.lua")
 include("sv_spotting.lua")
 include("sv_bbox_addition.lua")
 

@@ -103,6 +103,7 @@ if SERVER then
                 net.WriteEntity(attacker)
                 net.Broadcast()
                 MsgAll(attacker:Name() .. " found and killed " .. pl:Name() .. "\n")
+                PHE:HunterReactKill(attacker)
 
                 if GetConVar("ph_freezecam"):GetBool() then
                     if pl:GetNW2Bool("InFreezeCam", false) then

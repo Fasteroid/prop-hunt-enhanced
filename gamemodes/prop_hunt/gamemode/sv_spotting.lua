@@ -7,12 +7,6 @@ local SPOT_FAIL_COOL = GetConVar("ph_spot_fail_antispam"):GetFloat()
 local SPOT_POINT_VALUE = GetConVar("ph_spot_point_value"):GetInt()
 local MAX_POS_HISTORY  = GetConVar("ph_position_history_max"):GetInt()
 
-local function pickRandom(tbl)
-    for _, k in RandomPairs(table.GetKeys(tbl)) do
-        return tbl[k]
-    end
-end
-
 do
     PHE.PlayerHistory = {}
 
@@ -78,6 +72,7 @@ local function AttemptSpotting(hunter)
 
     local player_count = player.GetCount()
     local players      = player.GetAll()
+    local penalty      = true
 
     for i = 1, player_count do
         local ply = players[i]
@@ -95,11 +90,12 @@ local function AttemptSpotting(hunter)
 
         if not checkLineOfSight(pos_hunter, pos_prop, ply.ph_prop) then continue end -- no
 
-        ply.nextSpot = ply.nextSpot or 0
-
-        if ply.nextSpot > CurTime() then continue end -- already spotted
-
         if (pos_prop - pos_hunter):GetNormalized():Dot( aim_hunter ) < MIN_DOT_PROD then continue end -- get better aim dude
+        
+        penalty = false -- don't issue miss penalty, even if this prop is on spotting cooldown
+
+        ply.nextSpot = ply.nextSpot or 0
+        if ply.nextSpot > CurTime() then continue end
 
         local score = pos_prop:DistToSqr(pos_hunter)
 
@@ -107,56 +103,66 @@ local function AttemptSpotting(hunter)
             bestscore = score
             target = ply
         end
+
     end
 
-    return target
+    return target, penalty
 end
 
 net.Receive("PH:Infinity.Spot", function(_, hunter)
+    
     if hunter:GetNW2Float("PH:Infinity.SpotCooldown") > CurTime() then return end -- nice hacks dude
     if not hunter:Alive() then return end -- nice hacks dude
     if hunter:Team() ~= TEAM_HUNTERS then return end -- nope
-    local victim = AttemptSpotting(hunter)
+    local victim, penalty = AttemptSpotting(hunter)
 
-    if not victim then
+    if penalty then
         hunter:SetNW2Float("PH:Infinity.SpotCooldown", CurTime() + SPOT_FAIL_COOL)
         net.Start("PH:Infinity.Spot")
         net.WriteUInt(1, 4) -- spotting failed sound
         net.Send(hunter)
-
-        return
     end
 
-    hunter:SetNW2Float("PH:Infinity.SpotCooldown", CurTime() + 1)
+    if not victim then return end
+
+    hunter:SetNW2Float("PH:Infinity.SpotCooldown", CurTime() + 1) -- let them spot again quickly
+    victim.nextSpot = CurTime() + SPOT_IMMUNE_TIME                -- give prop immunity for a short period
+
     local glow_receivers = RecipientFilter()
     glow_receivers:AddRecipientsByTeam(TEAM_HUNTERS)
     glow_receivers:AddPlayer(victim)
     net.Start("PH:Infinity.Spot")
-    net.WriteUInt(5, 4)
-    net.WriteEntity(victim.ph_prop)
+        net.WriteUInt(5, 4)
+        net.WriteEntity(victim.ph_prop)
     net.Send(glow_receivers) -- send highlight to everyone
+
     -- send spotted sound to teammates
     local sound_receivers = RecipientFilter()
     sound_receivers:AddRecipientsByTeam(TEAM_HUNTERS)
     sound_receivers:RemovePlayer(hunter)
     net.Start("PH:Infinity.Spot")
-    net.WriteUInt(3, 4)
+        net.WriteUInt(3, 4)
     net.Send(sound_receivers)
+
     -- send spotted sound to spotter
     net.Start("PH:Infinity.Spot")
-    net.WriteUInt(2, 4)
+        net.WriteUInt(2, 4)
     net.Send(hunter)
+
     -- send ominous sound to spotted prop
     net.Start("PH:Infinity.Spot")
-    net.WriteUInt(4, 4)
+        net.WriteUInt(4, 4)
     net.Send(victim)
-    -- force the prop to taunt with a fear taunt
-    local randomtaunt = "taunts/" .. pickRandom(PHE.TAUNTS.PROPS.fear)
-    victim:SetNW2Float("NextCanTaunt", CurTime() + NewSoundDuration("sound/" .. randomtaunt))
-    victim:EmitSound(randomtaunt)
-    victim.nextSpot = CurTime() + SPOT_IMMUNE_TIME
 
+    -- force the prop to taunt with a fear taunt
+    PHE:PropReactFear(victim)
+
+    -- force the hunter to taunt with a random spot_reaction taunt
+    PHE:HunterReactSpotted(hunter)
+    
+    -- give hunter points for spotting
     if GAMEMODE:IsRoundPlaying() then
         hunter:PS2_AddStandardPoints(SPOT_POINT_VALUE, "Spotting Props")
     end
+
 end)
