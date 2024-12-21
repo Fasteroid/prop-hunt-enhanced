@@ -31,11 +31,7 @@ function PANEL:AddEntityText(txt)
         return true
     end
 
-    if txt:IsValid() then
-        self:AddText(txt:GetClass(), GAMEMODE.DeathNoticeDefaultColor)
-    else
-        self:AddText(tostring(txt))
-    end
+    return true
 end
 
 function PANEL:AddItem(item)
